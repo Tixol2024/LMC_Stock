@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LMC · Gestão de Stock</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --charcoal:   #3A3C42;
+    --charcoal-d: #2A2C30;
+    --charcoal-l: #50545C;
+    --crimson:    #A82233;
+    --crimson-d:  #821929;
+    --crimson-l:  #C4374A;
+    --crimson-xl: #F5E0E3;
+    --white:      #FFFFFF;
+    --offwhite:   #F7F7F8;
+    --border:     #E2E2E6;
+    --muted:      #8A8D96;
+    --ok:         #2E7D53;
+    --ok-bg:      #E6F4ED;
+    --warn:       #A0600A;
+    --warn-bg:    #FEF3DC;
+    --danger:     #A82233;
+    --danger-bg:  #F5E0E3;
+    --expiry-warn: #7B3FA0;
+    --expiry-warn-bg: #F3E8FF;
+    --radius:     12px;
+    --shadow:     0 2px 14px rgba(42,44,48,0.09);
+    --shadow-md:  0 6px 30px rgba(42,44,48,0.15);
+    --font-display: 'Raleway', sans-serif;
+    --font-body:    'Inter', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font-body); background: var(--offwhite); color: var(--charcoal); min-height: 100vh; font-size: 15px; }
+
+  /* ── SETUP SCREEN ── */
+  #setupScreen {
+    position: fixed; inset: 0; background: var(--charcoal-d);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+  }
+  #setupScreen.hidden { display: none; }
+  .setup-card {
+    background: var(--white); border-radius: 20px; padding: 36px 32px;
+    max-width: 500px; width: 100%; box-shadow: var(--shadow-md);
+  }
+  .setup-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .setup-logo svg { width: 44px; height: 44px; }
+  .setup-logo-text { font-family: var(--font-display); }
+  .setup-logo-text .lmc { font-size: 1.6rem; font-weight: 800; color: var(--charcoal-d); letter-spacing: -1px; }
+  .setup-logo-text .sub { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .setup-card h2 { font-family: var(--font-display); font-size: 1.2rem; color: var(--charcoal-d); margin-bottom: 8px; }
+  .setup-card p { font-size: 0.84rem; color: var(--muted); margin-bottom: 20px; line-height: 1.55; }
+  .setup-steps { background: var(--offwhite); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+  .setup-step { font-size: 0.80rem; color: var(--charcoal); margin-bottom: 8px; line-height: 1.5; }
+  .setup-step:last-child { margin-bottom: 0; }
+  .setup-step strong { color: var(--crimson); }
+  .setup-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .setup-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.88rem; color: var(--charcoal); font-family: var(--font-body); outline: none; transition: border-color 0.15s; margin-bottom: 14px; }
+  .setup-field input:focus { border-color: var(--crimson); }
+  .btn-setup { width: 100%; background: var(--crimson); color: var(--white); border: none; border-radius: 10px; padding: 13px; font-size: 0.92rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; transition: background 0.15s; }
+  .btn-setup:hover { background: var(--crimson-d); }
+  .setup-demo { text-align: center; margin-top: 12px; }
+  .setup-demo a { font-size: 0.80rem; color: var(--muted); cursor: pointer; text-decoration: underline; }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--charcoal-d);
+    color: var(--white);
+    padding: 0 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    position: sticky; top: 0; z-index: 100;
+    height: 60px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+  }
+  .header-brand { display: flex; align-items: center; gap: 12px; }
+  .header-brand svg { width: 36px; height: 36px; flex-shrink: 0; }
+  .brand-text { font-family: var(--font-display); }
+  .brand-lmc { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; color: var(--white); }
+  .brand-lmc span { color: var(--crimson-l); }
+  .brand-sub { font-size: 0.65rem; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 1px; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+  .sync-status { font-size: 0.72rem; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #6FCF97; flex-shrink: 0; }
+  .sync-dot.syncing { background: #F2C94C; animation: pulse 1s infinite; }
+  .sync-dot.error { background: var(--crimson-l); }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .hbtn {
+    background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18);
+    color: var(--white); border-radius: 8px; padding: 6px 12px; cursor: pointer;
+    font-size: 0.78rem; font-weight: 600; font-family: var(--font-body);
+    display: flex; align-items: center; gap: 5px; transition: background 0.15s; white-space: nowrap;
+  }
+  .hbtn:hover { background: rgba(255,255,255,0.18); }
+  .hbtn.crimson { background: var(--crimson); border-color: var(--crimson-l); }
+  .hbtn.crimson:hover { background: var(--crimson-d); }
+
+  /* ── TABS ── */
+  .tabs {
+    background: var(--charcoal); display: flex;
+    overflow-x: auto; padding: 0 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab {
+    padding: 14px 16px; cursor: pointer; font-size: 0.80rem; font-weight: 600;
+    font-family: var(--font-body); color: rgba(255,255,255,0.45);
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+    white-space: nowrap; transition: color 0.15s, border-color 0.15s; letter-spacing: 0.3px;
+  }
+  .tab.active { color: var(--white); border-bottom-color: var(--crimson-l); }
+  .tab:hover:not(.active) { color: rgba(255,255,255,0.75); }
+
+  /* ── MAIN ── */
+  main { padding: 20px 16px; max-width: 1120px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── ALERT BANNER ── */
+  .alert-banner {
+    background: linear-gradient(135deg, #7A1525 0%, var(--crimson) 100%);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px;
+    display: none; box-shadow: 0 4px 16px rgba(168,34,51,0.30);
+  }
+  .alert-banner.show { display: block; }
+  .alert-banner-title { color: #fff; font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .alert-items-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
+  .alert-chip {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #fff; font-weight: 600;
+  }
+  .alert-chip.esgotado { background: rgba(0,0,0,0.25); }
+
+  /* ── EXPIRY BANNER ── */
+  .expiry-banner {
+    background: linear-gradient(135deg, #5B2D80 0%, #8B44C0 100%);
+    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px;
+    display: none; box-shadow: 0 4px 16px rgba(123,63,160,0.30);
+  }
+  .expiry-banner.show { display: block; }
+  .expiry-banner .alert-banner-title { color: #fff; }
+  .expiry-chip {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #fff; font-weight: 600;
+  }
+  .expiry-chip.expired { background: rgba(0,0,0,0.30); }
+
+  /* ── STATS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat {
+    background: var(--white); border-radius: var(--radius); padding: 18px 16px;
+    box-shadow: var(--shadow); position: relative; overflow: hidden;
+  }
+  .stat::after { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background: var(--border); }
+  .stat.ok::after { background: var(--ok); }
+  .stat.warn::after { background: var(--warn); }
+  .stat.danger::after { background: var(--crimson); }
+  .stat.total::after { background: var(--charcoal-l); }
+  .stat.expiry::after { background: var(--expiry-warn); }
+  .stat-val { font-family: var(--font-display); font-size: 2rem; font-weight: 800; line-height: 1; color: var(--charcoal-d); }
+  .stat.ok .stat-val { color: var(--ok); }
+  .stat.warn .stat-val { color: var(--warn); }
+  .stat.danger .stat-val { color: var(--crimson); }
+  .stat.expiry .stat-val { color: var(--expiry-warn); }
+  .stat-lbl { font-size: 0.70rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 5px; font-weight: 600; }
+
+  /* ── CHARTS ── */
+  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media(max-width:640px){ .charts-row { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .chart-title { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; }
+
+  /* ── FILTER / TOOLBAR ── */
+  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .inp {
+    padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.84rem; color: var(--charcoal); font-family: var(--font-body); background: var(--white);
+    outline: none; transition: border-color 0.15s;
+  }
+  .inp:focus { border-color: var(--crimson); }
+  .inp-search { flex: 1; min-width: 150px; }
+  select.inp { cursor: pointer; }
+  .btn {
+    border: none; border-radius: 9px; padding: 9px 16px; font-size: 0.84rem;
+    font-weight: 700; font-family: var(--font-body); cursor: pointer; transition: background 0.15s;
+    display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  }
+  .btn-primary { background: var(--crimson); color: var(--white); }
+  .btn-primary:hover { background: var(--crimson-d); }
+  .btn-ghost { background: var(--white); color: var(--charcoal); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--crimson); color: var(--crimson); }
+  .btn-sm { padding: 5px 11px; font-size: 0.75rem; border-radius: 7px; }
+  .btn-del { background: var(--danger-bg); color: var(--danger); }
+  .btn-del:hover { background: var(--crimson); color: var(--white); }
+  .btn-saida { background: #FEF3DC; color: var(--warn); border: 1px solid #F0C97A; }
+  .btn-saida:hover { background: var(--warn); color: var(--white); }
+
+  /* ── TABLE ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; background: var(--white); }
+  thead tr { background: var(--charcoal); }
+  thead th { color: rgba(255,255,255,0.75); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; padding: 12px 14px; text-align: left; white-space: nowrap; font-family: var(--font-body); }
+  thead th:first-child { border-radius: var(--radius) 0 0 0; }
+  thead th:last-child { border-radius: 0 var(--radius) 0 0; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:hover { background: #F9F0F1; }
+  tbody tr:last-child { border-bottom: none; }
+  td { padding: 11px 14px; font-size: 0.84rem; vertical-align: middle; }
+  .mat-name { font-weight: 600; color: var(--charcoal-d); }
+  .mat-note { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
+  .cat-tag {
+    display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 0.70rem; font-weight: 700;
+    background: var(--offwhite); color: var(--charcoal-l); border: 1px solid var(--border);
+  }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+  .badge-ok { background: var(--ok-bg); color: var(--ok); }
+  .badge-warn { background: var(--warn-bg); color: var(--warn); }
+  .badge-danger { background: var(--danger-bg); color: var(--danger); }
+  .badge-expiry { background: var(--expiry-warn-bg); color: var(--expiry-warn); }
+  .badge-expired { background: #1a1a1a; color: #fff; }
+  .qty-ctrl { display: flex; align-items: center; gap: 6px; }
+  .qty-btn {
+    width: 26px; height: 26px; border: none; border-radius: 7px; cursor: pointer;
+    font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1;
+    transition: transform 0.1s, background 0.1s;
+  }
+  .qty-btn:hover { transform: scale(1.13); }
+  .qty-btn.minus { background: var(--danger-bg); color: var(--danger); }
+  .qty-btn.plus { background: var(--ok-bg); color: var(--ok); }
+  .qty-val { font-family: var(--font-display); font-weight: 800; min-width: 28px; text-align: center; font-size: 0.95rem; color: var(--charcoal-d); }
+  .td-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+  .expiry-date { font-size: 0.72rem; margin-top: 3px; display: flex; align-items: center; gap: 4px; }
+  .expiry-date.ok { color: var(--ok); }
+  .expiry-date.warn { color: var(--expiry-warn); font-weight: 600; }
+  .expiry-date.expired { color: var(--danger); font-weight: 700; }
+
+  /* ── EMPTY ── */
+  .empty { text-align: center; padding: 52px 20px; color: var(--muted); }
+  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
+  .empty p { font-size: 0.88rem; }
+
+  /* ── MODAL ── */
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(30,30,35,0.55); z-index: 200; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(3px); }
+  .modal-bg.open { display: flex; }
+  .modal { background: var(--white); border-radius: 18px; padding: 28px 26px; width: 100%; max-width: 440px; box-shadow: var(--shadow-md); max-height: 90vh; overflow-y: auto; }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .modal-header h2 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--charcoal-d); }
+  .modal-close { background: var(--offwhite); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 1rem; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { background: var(--danger-bg); color: var(--danger); }
+  .fg { margin-bottom: 14px; }
+  .fg label { display: block; font-size: 0.73rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+  .fg input, .fg select, .fg textarea {
+    width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px;
+    font-size: 0.88rem; color: var(--charcoal); font-family: var(--font-body); background: var(--offwhite); outline: none; transition: border-color 0.15s;
+  }
+  .fg input:focus, .fg select:focus { border-color: var(--crimson); background: var(--white); }
+  .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .fg-hint { font-size: 0.70rem; color: var(--muted); margin-top: 4px; }
+
+  /* ── SAIDA MODAL ── */
+  .saida-modal { max-width: 380px; }
+  .saida-num { font-family: var(--font-display); font-size: 2.8rem; font-weight: 800; text-align: center; color: var(--charcoal-d); width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: 12px; outline: none; }
+  .saida-num:focus { border-color: var(--warn); }
+  .saida-info { background: var(--warn-bg); border-radius: 9px; padding: 11px 14px; margin-bottom: 16px; font-size: 0.82rem; color: var(--warn); font-weight: 600; border-left: 3px solid var(--warn); }
+
+  /* ── HISTORICO ── */
+  .hist-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .hist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .hist-header h3 { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .hist-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .hist-item:last-child { border-bottom: none; }
+  .hist-ico { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+  .hist-ico.in { background: var(--ok-bg); }
+  .hist-ico.out { background: var(--danger-bg); }
+  .hist-ico.edit { background: #EEF0FF; }
+  .hist-body { flex: 1; }
+  .hist-name { font-size: 0.84rem; font-weight: 600; color: var(--charcoal-d); }
+  .hist-detail { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+  .hist-time { font-size: 0.72rem; color: var(--muted); white-space: nowrap; padding-top: 3px; }
+
+  /* ── TOAST ── */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(90px);
+    background: var(--charcoal-d); color: var(--white); padding: 11px 22px; border-radius: 30px;
+    font-size: 0.84rem; font-weight: 600; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25); pointer-events: none; font-family: var(--font-body);
+    border-left: 4px solid var(--crimson);
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width:500px) {
+    .brand-sub, .sync-status span { display: none; }
+    .hbtn span { display: none; }
+    td { padding: 9px 10px; }
+    .td-actions { flex-direction: column; }
+  }
+
+  /* ── CONFIG PANEL ── */
+  .config-panel { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); max-width: 600px; margin-bottom: 16px; }
+  .config-panel h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: var(--charcoal-d); margin-bottom: 6px; }
+  .config-panel p { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+  .info-box { background: var(--offwhite); border-radius: 9px; padding: 14px; margin: 14px 0; border-left: 3px solid var(--crimson); }
+  .info-box p { font-size: 0.80rem; color: var(--charcoal); margin: 0; line-height: 1.55; }
+  .info-box code { background: var(--border); padding: 1px 5px; border-radius: 4px; font-size: 0.78rem; color: var(--crimson-d); }
+  .config-section-title { font-size: 0.70rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<!-- ══ SETUP SCREEN ══════════════════════════════════════════════════════════ -->
+<div id="setupScreen">
+  <div class="setup-card">
+    <div class="setup-logo">
+      <svg viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="22" r="22" fill="#3A3C42"/>
+        <path d="M14 13C14 13 11 16 11 20C11 25 13.5 27.5 16 28.5C16 28.5 16 32 18.5 33H25.5C28 32 28 28.5 28 28.5C30.5 27.5 33 25 33 20C33 16 30 13 30 13C27.5 10.5 25 10.5 22 12C19 10.5 16.5 10.5 14 13Z" fill="white" opacity="0.15"/>
+        <path d="M16 14C16 14 13.5 17 13.5 20.5C13.5 24 15.5 26 17.5 27C17.5 27 17.5 30 19.5 31H24.5C26.5 30 26.5 27 26.5 27C28.5 26 30.5 24 30.5 20.5C30.5 17 28 14 28 14" stroke="#A82233" stroke-width="2" stroke-linecap="round"/>
+        <path d="M20 12.5C21 15 21 17 22 17C23 17 23 15 24 12.5" stroke="#A82233" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+      <div class="setup-logo-text">
+        <div class="lmc">L<span>M</span>C</div>
+        <div class="sub">Clínica Dentária · Stock</div>
+      </div>
+    </div>
+    <h2>Configurar Google Sheets</h2>
+    <p>Os dados são guardados num Google Sheet — gratuito, acessível de qualquer dispositivo, partilhável com toda a equipa.</p>
+
+    <div class="setup-steps">
+      <div class="setup-step">1. Vai a <strong>sheets.google.com</strong> e cria um novo Google Sheet.</div>
+      <div class="setup-step">2. Vai a <strong>Extensões → Apps Script</strong>, apaga o código existente e cola o script gerado na aba Configuração.</div>
+      <div class="setup-step">3. Clica em <strong>Implementar → Nova implementação → Aplicação Web</strong>. Define "Quem tem acesso" como <strong>Qualquer pessoa</strong>. Copia o URL.</div>
+      <div class="setup-step">4. Cola o URL abaixo e clica em Ligar.</div>
+    </div>
+
+    <div class="setup-field">
+      <label>URL do Google Apps Script (Web App URL)</label>
+      <input type="url" id="setupUrl" placeholder="https://script.google.com/macros/s/AKf.../exec">
+      <button class="btn-setup" onclick="connectSheet()">🔗 Ligar ao Google Sheets</button>
+    </div>
+    <div class="setup-demo">
+      <a onclick="useDemoMode()">Usar modo demonstração (dados locais, sem sincronização)</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══ HEADER ════════════════════════════════════════════════════════════════ -->
+<header>
+  <div class="header-brand">
+    <svg viewBox="0 0 36 36" fill="none">
+      <circle cx="18" cy="18" r="18" fill="#2A2C30"/>
+      <path d="M12 11.5C12 11.5 9.5 14 9.5 18C9.5 22.5 12 24.5 14 25.5C14 25.5 14 28 16 29H20C22 28 22 25.5 22 25.5C24 24.5 26.5 22.5 26.5 18C26.5 14 24 11.5 24 11.5" stroke="#A82233" stroke-width="2" stroke-linecap="round"/>
+      <path d="M16.5 10.5C17.2 13 17.2 14.5 18 14.5C18.8 14.5 18.8 13 19.5 10.5" stroke="#A82233" stroke-width="1.8" stroke-linecap="round"/>
+    </svg>
+    <div class="brand-text">
+      <div class="brand-lmc">L<span>M</span>C</div>
+      <div class="brand-sub">Clínica Dentária · Gestão de Stock</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="sync-status">
+      <div class="sync-dot" id="syncDot"></div>
+      <span id="syncLabel">Ligado</span>
+    </div>
+    <button class="hbtn" onclick="syncNow()" title="Sincronizar">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+      <span>Sync</span>
+    </button>
+    <button class="hbtn crimson" onclick="openModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      <span>Novo Material</span>
+    </button>
+  </div>
+</header>
+
+<!-- ══ TABS ══════════════════════════════════════════════════════════════════ -->
+<div class="tabs">
+  <div class="tab active" onclick="showTab('dashboard')">📊 Dashboard</div>
+  <div class="tab" onclick="showTab('stock')">📦 Stock</div>
+  <div class="tab" onclick="showTab('historico')">📋 Histórico</div>
+  <div class="tab" onclick="showTab('config')">⚙️ Configuração</div>
+</div>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════════════════ -->
+<main>
+
+  <!-- ALERT BANNER - Stock baixo -->
+  <div class="alert-banner" id="alertBanner">
+    <div class="alert-banner-title">⚠️ Materiais que precisam de atenção</div>
+    <div class="alert-items-wrap" id="alertItems"></div>
+  </div>
+
+  <!-- EXPIRY BANNER - Validades -->
+  <div class="expiry-banner" id="expiryBanner">
+    <div class="alert-banner-title">🗓️ Atenção às validades</div>
+    <div class="alert-items-wrap" id="expiryItems"></div>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="sec-dashboard">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Quantidade vs Mínimo por Material</div>
+        <canvas id="chartBar" height="200"></canvas>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Estado Geral</div>
+        <canvas id="chartDonut" height="200"></canvas>
+      </div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Total em Stock por Categoria</div>
+      <canvas id="chartCat" height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- STOCK -->
+  <div class="section" id="sec-stock">
+    <div class="toolbar">
+      <input type="text" class="inp inp-search" id="searchInp" placeholder="🔍 Pesquisar..." oninput="renderTable()">
+      <select class="inp" id="filterCat" onchange="renderTable()" style="max-width:155px">
+        <option value="">Todas as categorias</option>
+      </select>
+      <select class="inp" id="filterStatus" onchange="renderTable()" style="max-width:145px">
+        <option value="">Todos os estados</option>
+        <option value="ok">✅ Normal</option>
+        <option value="warn">⚠️ Baixo</option>
+        <option value="danger">🔴 Crítico</option>
+        <option value="expiry-warn">🟣 Validade próxima</option>
+        <option value="expired">⚫ Expirado</option>
+      </select>
+      <button class="btn btn-ghost" onclick="exportCSV()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar
+      </button>
+      <button class="btn btn-primary" onclick="openModal()">+ Adicionar</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>Categoria</th>
+            <th>Quantidade</th>
+            <th>Mínimo</th>
+            <th>Validade</th>
+            <th>Estado</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="emptyState" style="display:none">
+      <div class="empty-icon">📦</div>
+      <p>Nenhum material encontrado.<br>Adiciona o primeiro!</p>
+    </div>
+  </div>
+
+  <!-- HISTORICO -->
+  <div class="section" id="sec-historico">
+    <div class="hist-card">
+      <div class="hist-header">
+        <h3>Movimentos de Stock</h3>
+        <button class="btn btn-sm btn-del" onclick="clearHist()">Limpar histórico</button>
+      </div>
+      <div id="histList"></div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="section" id="sec-config">
+    <div class="config-panel">
+      <h3>⚙️ Ligação ao Google Sheets</h3>
+      <p>Altera o URL do Google Apps Script ou reconecta a uma folha diferente.</p>
+      <div class="fg">
+        <label>URL do Google Apps Script</label>
+        <input type="url" id="configUrl" placeholder="https://script.google.com/macros/s/...">
+        <div class="fg-hint">Este URL fica guardado no browser. Cola aqui uma vez e não precisas repetir.</div>
+      </div>
+      <button class="btn btn-primary" onclick="saveConfig()">Guardar e Reconectar</button>
+    </div>
+
+    <div class="config-panel">
+      <h3>📧 Alertas por Email</h3>
+      <p>O email de alerta é enviado pelo próprio Google Apps Script quando detetam validades próximas ou stock crítico. Não precisas de serviço externo.</p>
+      <div class="fg">
+        <label>Email para receber alertas</label>
+        <input type="email" id="configEmail" placeholder="exemplo@gmail.com">
+        <div class="fg-hint">Guarda este email e usa-o no campo ALERT_EMAIL do script abaixo.</div>
+      </div>
+      <button class="btn btn-ghost" onclick="saveEmailConfig()">💾 Guardar Email</button>
+      <button class="btn btn-primary" style="margin-left:8px" onclick="sendTestAlert()">📤 Testar Alertas Agora</button>
+    </div>
+
+    <div class="config-panel">
+      <h3>📋 Script do Google Apps Script</h3>
+      <p>Copia o código abaixo e cola em <strong>Extensões → Apps Script</strong> no teu Google Sheet. Substitui o teu email em <code>ALERT_EMAIL</code>.</p>
+      <div style="background:var(--charcoal-d);border-radius:10px;padding:16px;margin-top:10px;overflow-x:auto">
+        <pre id="scriptCode" style="color:#6FCF97;font-size:0.72rem;line-height:1.6;white-space:pre-wrap;font-family:monospace"></pre>
+      </div>
+      <button class="btn btn-ghost" style="margin-top:10px;width:100%" onclick="copyScript()">📋 Copiar Script</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ MODAL ADD/EDIT ════════════════════════════════════════════════════════ -->
+<div class="modal-bg" id="modalBg" onclick="closeBg(event,'modalBg')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">Novo Material</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="fg">
+      <label>Nome do Material *</label>
+      <input type="text" id="fNome" placeholder="Ex: Luvas de Nitrilo M">
+    </div>
+    <div class="fg">
+      <label>Categoria</label>
+      <select id="fCat">
+        <option>Consumíveis</option>
+        <option>Instrumentos</option>
+        <option>Anestesia</option>
+        <option>Higiene</option>
+        <option>Radiologia</option>
+        <option>Proteção Individual</option>
+        <option>Materiais de Restauração</option>
+        <option>Esterilização</option>
+        <option>Outros</option>
+      </select>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Quantidade *</label>
+        <input type="number" id="fQty" min="0" placeholder="0">
+      </div>
+      <div class="fg">
+        <label>Stock Mínimo *</label>
+        <input type="number" id="fMin" min="0" placeholder="5">
+      </div>
+    </div>
+    <div class="fg-row">
+      <div class="fg">
+        <label>Unidade</label>
+        <input type="text" id="fUnit" placeholder="unid, cx, ml...">
+      </div>
+      <div class="fg">
+        <label>Fornecedor</label>
+        <input type="text" id="fForn" placeholder="Opcional">
+      </div>
+    </div>
+    <div class="fg">
+      <label>📅 Data de Validade</label>
+      <input type="month" id="fValidade" placeholder="AAAA-MM">
+      <div class="fg-hint">Deixa em branco se não aplicável. Recebes alerta 4 meses antes.</div>
+    </div>
+    <div class="fg">
+      <label>Referência / Notas</label>
+      <input type="text" id="fNotes" placeholder="Ref. do produto, etc.">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveMat()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL ENTRADA ═════════════════════════════════════════════════════════ -->
+<div class="modal-bg" id="entradaBg" onclick="closeBg(event,'entradaBg')">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>📥 Entrada de Stock</h2>
+      <button class="modal-close" onclick="closeEntrada()">✕</button>
+    </div>
+    <p id="entradaInfo" style="font-size:0.84rem;color:var(--muted);margin-bottom:18px"></p>
+    <div class="fg">
+      <label>Quantidade a Adicionar</label>
+      <input type="number" id="entradaQty" min="1" value="1">
+    </div>
+    <div class="fg">
+      <label>📅 Nova Data de Validade (opcional)</label>
+      <input type="month" id="entradaValidade">
+      <div class="fg-hint">Preenche se o novo lote tiver validade diferente.</div>
+    </div>
+    <div class="fg">
+      <label>Observação</label>
+      <input type="text" id="entradaNota" placeholder="Ex: Encomenda recebida de Septodont">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeEntrada()">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmEntrada()">✅ Confirmar Entrada</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL SAÍDA ════════════════════════════════════════════════════════════ -->
+<div class="modal-bg" id="saidaBg" onclick="closeBg(event,'saidaBg')">
+  <div class="modal saida-modal">
+    <div class="modal-header">
+      <h2>📤 Retirar do Armário</h2>
+      <button class="modal-close" onclick="closeSaida()">✕</button>
+    </div>
+    <div class="saida-info" id="saidaInfo"></div>
+    <div class="fg" style="text-align:center">
+      <label>Quantidade a retirar</label>
+      <input type="number" class="saida-num" id="saidaQty" min="1" value="1">
+    </div>
+    <div class="fg">
+      <label>Motivo (opcional)</label>
+      <input type="text" id="saidaNota" placeholder="Ex: Consulta Dr. Silva, urgência...">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSaida()">Cancelar</button>
+      <button class="btn btn-saida" onclick="confirmSaida()">📤 Confirmar Saída</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══ APPS SCRIPT CODE ══════════════════════════════════════════════════════════
+const APPS_SCRIPT = `// ════════════════════════════════════════════════════
+// LMC · Gestão de Stock — Google Apps Script
+// Cola este código em Extensões → Apps Script
+// ════════════════════════════════════════════════════
+
+const SHEET_NAME  = 'Stock';
+const HIST_SHEET  = 'Historico';
+const ALERT_EMAIL = 'O_TEU_EMAIL@gmail.com'; // ← Muda para o teu email!
+const MONTHS_WARN = 4; // Alerta X meses antes da validade
+
+// ── Trigger automático (corre todos os dias) ──────────────────────────────
+// Para ativar: Extensões → Apps Script → Gatilhos → + Adicionar gatilho
+// Função: checkExpiryAndStock | Evento: Baseado no tempo | Diário
+function checkExpiryAndStock() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) return;
+
+  const rows = sh.getDataRange().getValues();
+  const headers = rows[0];
+  const today = new Date();
+  const warnDate = new Date(today);
+  warnDate.setMonth(warnDate.getMonth() + MONTHS_WARN);
+
+  const expiring = [];
+  const expired  = [];
+  const lowStock = [];
+
+  rows.slice(1).forEach(r => {
+    const obj = {};
+    headers.forEach((h,i) => obj[h] = r[i]);
+
+    // Verifica validade
+    if (obj.validade) {
+      const exp = new Date(obj.validade + '-28'); // último dia aproximado do mês
+      if (exp < today) {
+        expired.push(\`\${obj.nome} — EXPIRADO em \${obj.validade}\`);
+      } else if (exp <= warnDate) {
+        const diffDays = Math.ceil((exp - today) / (1000*60*60*24));
+        expiring.push(\`\${obj.nome} — expira em \${obj.validade} (\${diffDays} dias)\`);
+      }
+    }
+
+    // Verifica stock baixo
+    const qty = parseFloat(obj.qty) || 0;
+    const min = parseFloat(obj.min) || 0;
+    if (qty === 0) {
+      lowStock.push(\`\${obj.nome} — ESGOTADO\`);
+    } else if (qty <= min) {
+      lowStock.push(\`\${obj.nome} — Qty: \${qty} / Mínimo: \${min} \${obj.unit||''}\`);
+    }
+  });
+
+  if (!expiring.length && !expired.length && !lowStock.length) return;
+
+  let body = '🏥 LMC Clínica Dentária — Relatório de Stock\\n';
+  body += '═══════════════════════════════════\\n\\n';
+
+  if (expired.length) {
+    body += '🔴 PRODUTOS EXPIRADOS:\\n';
+    expired.forEach(l => body += '  • ' + l + '\\n');
+    body += '\\n';
+  }
+  if (expiring.length) {
+    body += '🟡 VALIDADES PRÓXIMAS (< ' + MONTHS_WARN + ' meses):\\n';
+    expiring.forEach(l => body += '  • ' + l + '\\n');
+    body += '\\n';
+  }
+  if (lowStock.length) {
+    body += '⚠️ STOCK BAIXO / ESGOTADO:\\n';
+    lowStock.forEach(l => body += '  • ' + l + '\\n');
+    body += '\\n';
+  }
+
+  body += '─────────────────────────────\\n';
+  body += 'Enviado automaticamente pelo sistema LMC.';
+
+  MailApp.sendEmail({
+    to: ALERT_EMAIL,
+    subject: '⚠️ LMC Stock — ' + (expired.length ? expired.length + ' expirados, ' : '') +
+             (expiring.length ? expiring.length + ' a expirar, ' : '') +
+             (lowStock.length ? lowStock.length + ' stock baixo' : ''),
+    body: body
+  });
+}
+
+// ── HTTP handlers ─────────────────────────────────────────────────────────
+function doGet(e) {
+  const action = e.parameter.action || 'getAll';
+  if (action === 'getAll')    return getAll();
+  if (action === 'getHist')   return getHist();
+  if (action === 'sendAlert') return sendAlertNow();
+  return resp({error:'unknown action'});
+}
+
+function doPost(e) {
+  const data = JSON.parse(e.postData.contents);
+  const action = data.action;
+  if (action === 'add')       return addRow(data);
+  if (action === 'update')    return updateRow(data);
+  if (action === 'delete')    return deleteRow(data);
+  if (action === 'addHist')   return addHist(data);
+  if (action === 'clearHist') return clearHist();
+  return resp({error:'unknown action'});
+}
+
+function sendAlertNow() {
+  try { checkExpiryAndStock(); return resp({ok:true}); }
+  catch(e) { return resp({error: e.message}); }
+}
+
+function getAll() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME);
+    sh.appendRow(['id','nome','cat','qty','min','unit','fornecedor','validade','notes','criado']);
+  }
+  const rows = sh.getDataRange().getValues();
+  const headers = rows[0];
+  const items = rows.slice(1).map(r => {
+    const obj = {}; headers.forEach((h,i) => obj[h]=r[i]); return obj;
+  });
+  return resp({items});
+}
+
+function getHist() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(HIST_SHEET);
+  if (!sh) return resp({hist:[]});
+  const rows = sh.getDataRange().getValues();
+  if (rows.length < 2) return resp({hist:[]});
+  const headers = rows[0];
+  const hist = rows.slice(1).reverse().map(r => {
+    const obj = {}; headers.forEach((h,i) => obj[h]=r[i]); return obj;
+  });
+  return resp({hist});
+}
+
+function addRow(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_NAME);
+    sh.appendRow(['id','nome','cat','qty','min','unit','fornecedor','validade','notes','criado']);
+  }
+  const id = Utilities.getUuid();
+  sh.appendRow([id, data.nome, data.cat, data.qty, data.min, data.unit||'', data.fornecedor||'', data.validade||'', data.notes||'', new Date().toISOString()]);
+  return resp({ok:true, id});
+}
+
+function updateRow(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) return resp({error:'no sheet'});
+  const rows = sh.getDataRange().getValues();
+  for (let i=1;i<rows.length;i++) {
+    if (rows[i][0] == data.id) {
+      sh.getRange(i+1,2).setValue(data.nome);
+      sh.getRange(i+1,3).setValue(data.cat);
+      sh.getRange(i+1,4).setValue(data.qty);
+      sh.getRange(i+1,5).setValue(data.min);
+      sh.getRange(i+1,6).setValue(data.unit||'');
+      sh.getRange(i+1,7).setValue(data.fornecedor||'');
+      sh.getRange(i+1,8).setValue(data.validade||'');
+      sh.getRange(i+1,9).setValue(data.notes||'');
+      return resp({ok:true});
+    }
+  }
+  return resp({error:'not found'});
+}
+
+function deleteRow(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) return resp({error:'no sheet'});
+  const rows = sh.getDataRange().getValues();
+  for (let i=1;i<rows.length;i++) {
+    if (rows[i][0] == data.id) { sh.deleteRow(i+1); return resp({ok:true}); }
+  }
+  return resp({error:'not found'});
+}
+
+function addHist(data) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(HIST_SHEET);
+  if (!sh) { sh = ss.insertSheet(HIST_SHEET); sh.appendRow(['type','nome','detail','ts']); }
+  sh.appendRow([data.type, data.nome, data.detail, new Date().toISOString()]);
+  return resp({ok:true});
+}
+
+function clearHist() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sh = ss.getSheetByName(HIST_SHEET);
+  if (!sh) return resp({ok:true});
+  const lastRow = sh.getLastRow();
+  if (lastRow > 1) sh.deleteRows(2, lastRow-1);
+  return resp({ok:true});
+}
+
+function resp(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}`;
+
+document.getElementById('scriptCode').textContent = APPS_SCRIPT;
+
+// ══ STATE ════════════════════════════════════════════════════════════════════
+const LKEY   = 'lmc_url';
+const LDATA  = 'lmc_data';
+const LHIST  = 'lmc_hist';
+const LDEMO  = 'lmc_demo';
+const LEMAIL = 'lmc_email';
+
+let apiUrl     = localStorage.getItem(LKEY) || '';
+let isDemoMode = localStorage.getItem(LDEMO) === '1';
+let data       = [];
+let hist       = [];
+let editId     = null;
+let entradaId  = null;
+let saidaId    = null;
+let chartBar, chartDonut, chartCat;
+
+// ══ INIT ═════════════════════════════════════════════════════════════════════
+(async function init() {
+  // Restaurar email guardado
+  const savedEmail = localStorage.getItem(LEMAIL);
+  if (savedEmail) document.getElementById('configEmail').value = savedEmail;
+
+  if (isDemoMode) { loadDemo(); hideSetup(); renderAll(); return; }
+  if (apiUrl) {
+    document.getElementById('configUrl').value = apiUrl;
+    hideSetup();
+    await syncNow();
+  } else {
+    showSetup();
+  }
+})();
+
+function showSetup() { document.getElementById('setupScreen').classList.remove('hidden'); }
+function hideSetup() { document.getElementById('setupScreen').classList.add('hidden'); }
+
+// ══ SETUP ════════════════════════════════════════════════════════════════════
+async function connectSheet() {
+  const url = document.getElementById('setupUrl').value.trim();
+  if (!url || !url.startsWith('https://script.google.com')) {
+    alert('Introduz um URL válido do Google Apps Script.'); return;
+  }
+  setSyncState('syncing', 'A ligar…');
+  try {
+    const res = await fetch(url + '?action=getAll');
+    const json = await res.json();
+    if (json.items !== undefined) {
+      apiUrl = url;
+      localStorage.setItem(LKEY, url);
+      document.getElementById('configUrl').value = url;
+      data = json.items.map(normalise);
+      saveLocal();
+      hideSetup();
+      await loadHistFromSheet();
+      renderAll();
+      setSyncState('ok', 'Ligado');
+      toast('✅ Ligado ao Google Sheets!');
+    } else { throw new Error('resposta inválida'); }
+  } catch(e) {
+    setSyncState('error', 'Erro');
+    alert('Não foi possível ligar. Verifica o URL e as permissões do Apps Script.\n\n' + e.message);
+  }
+}
+
+function useDemoMode() {
+  isDemoMode = true;
+  localStorage.setItem(LDEMO, '1');
+  loadDemo();
+  hideSetup();
+  renderAll();
+  toast('Modo demonstração ativo (dados locais)');
+}
+
+function loadDemo() {
+  const saved = localStorage.getItem(LDATA);
+  if (saved) { data = JSON.parse(saved); return; }
+  const today = new Date();
+  const m2 = new Date(today); m2.setMonth(m2.getMonth()+2);
+  const m3 = new Date(today); m3.setMonth(m3.getMonth()+3);
+  const m8 = new Date(today); m8.setMonth(m8.getMonth()+8);
+  const mp1 = new Date(today); mp1.setMonth(mp1.getMonth()-1);
+  const fmt = d => d.toISOString().slice(0,7);
+
+  data = [
+    { id:'d1', nome:'Luvas Nitrilo M',              cat:'Proteção Individual',       qty:3,  min:10, unit:'cx',   fornecedor:'Medline',   validade:'',     notes:'' },
+    { id:'d2', nome:'Máscaras Cirúrgicas',           cat:'Proteção Individual',       qty:25, min:10, unit:'unid', fornecedor:'',          validade:'',     notes:'' },
+    { id:'d3', nome:'Lidocaína 2% c/ Epinefrina',   cat:'Anestesia',                 qty:8,  min:5,  unit:'cx',   fornecedor:'Septodont', validade:fmt(m2), notes:'Ref. 3001380' },
+    { id:'d4', nome:'Articaína 4% c/ Epinefrina',   cat:'Anestesia',                 qty:4,  min:5,  unit:'cx',   fornecedor:'Septodont', validade:fmt(m3), notes:'' },
+    { id:'d5', nome:'Mepivacaína 3%',               cat:'Anestesia',                 qty:2,  min:3,  unit:'cx',   fornecedor:'Septodont', validade:fmt(mp1)+'', notes:'⚠️ Verificar' },
+    { id:'d6', nome:'Algodão em Rolo',               cat:'Consumíveis',               qty:15, min:5,  unit:'unid', fornecedor:'',          validade:'',     notes:'' },
+    { id:'d7', nome:'Ácido Fosfórico 37%',           cat:'Materiais de Restauração',  qty:0,  min:3,  unit:'unid', fornecedor:'',          validade:fmt(m8), notes:'' },
+    { id:'d8', nome:'Radiografias Periapicais',      cat:'Radiologia',                qty:8,  min:5,  unit:'cx',   fornecedor:'',          validade:'',     notes:'' },
+    { id:'d9', nome:'Brocas Diamante Troncocónica',  cat:'Instrumentos',              qty:4,  min:6,  unit:'unid', fornecedor:'',          validade:'',     notes:'' },
+  ];
+  saveLocal();
+}
+
+// ══ SYNC ═════════════════════════════════════════════════════════════════════
+async function syncNow() {
+  if (isDemoMode) { renderAll(); toast('Modo demo — sem sincronização'); return; }
+  if (!apiUrl) return;
+  setSyncState('syncing', 'A sincronizar…');
+  try {
+    const [dRes, hRes] = await Promise.all([
+      fetch(apiUrl + '?action=getAll'),
+      fetch(apiUrl + '?action=getHist')
+    ]);
+    const dJson = await dRes.json();
+    const hJson = await hRes.json();
+    data = (dJson.items || []).map(normalise);
+    hist = (hJson.hist || []);
+    saveLocal();
+    renderAll();
+    setSyncState('ok', 'Sincronizado');
+    toast('✅ Dados atualizados');
+  } catch(e) {
+    setSyncState('error', 'Sem ligação');
+    const ld = localStorage.getItem(LDATA);
+    if (ld) data = JSON.parse(ld);
+    renderAll();
+    toast('⚠️ Sem ligação — a usar dados locais');
+  }
+}
+
+async function loadHistFromSheet() {
+  if (isDemoMode || !apiUrl) return;
+  try {
+    const res = await fetch(apiUrl + '?action=getHist');
+    const j = await res.json();
+    hist = j.hist || [];
+  } catch {}
+}
+
+function setSyncState(s, label) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLabel');
+  dot.className = 'sync-dot' + (s !== 'ok' ? ' ' + s : '');
+  lbl.textContent = label;
+}
+
+// ══ API CALLS ════════════════════════════════════════════════════════════════
+async function apiPost(body) {
+  if (isDemoMode) return { ok: true };
+  if (!apiUrl) return { ok: true };
+  const res = await fetch(apiUrl, { method:'POST', body: JSON.stringify(body) });
+  return res.json();
+}
+
+// ══ LOCAL STORAGE ════════════════════════════════════════════════════════════
+function saveLocal() {
+  localStorage.setItem(LDATA, JSON.stringify(data));
+  localStorage.setItem(LHIST, JSON.stringify(hist));
+}
+
+// ══ HELPERS ══════════════════════════════════════════════════════════════════
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function normalise(i) {
+  return {
+    id: i.id||uid(), nome: i.nome||'', cat: i.cat||'Outros',
+    qty: +i.qty||0, min: +i.min||0, unit: i.unit||'unid',
+    fornecedor: i.fornecedor||'', validade: i.validade||'', notes: i.notes||''
+  };
+}
+function status(i) { if (i.qty===0) return 'danger'; if (i.qty<=i.min) return 'warn'; return 'ok'; }
+function badge(i) {
+  const s = status(i);
+  const labels = { ok:'✅ Normal', warn:'⚠️ Baixo', danger: i.qty===0?'🔴 Esgotado':'🔴 Crítico' };
+  return `<span class="badge badge-${s}">${labels[s]||labels.ok}</span>`;
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Validade helpers ───────────────────────────────────────────────────────
+function expiryStatus(validade) {
+  if (!validade) return null;
+  const today = new Date();
+  // validade é YYYY-MM, comparamos com o último dia do mês
+  const parts = validade.split('-');
+  const exp = new Date(parseInt(parts[0]), parseInt(parts[1])-1+1, 0); // último dia do mês
+  const warnDate = new Date(today);
+  warnDate.setMonth(warnDate.getMonth() + 4);
+  if (exp < today) return 'expired';
+  if (exp <= warnDate) return 'expiry-warn';
+  return 'expiry-ok';
+}
+
+function expiryLabel(validade) {
+  if (!validade) return '';
+  const [year, month] = validade.split('-');
+  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return monthNames[parseInt(month)-1] + '/' + year;
+}
+
+function expiryDaysLeft(validade) {
+  if (!validade) return null;
+  const parts = validade.split('-');
+  const exp = new Date(parseInt(parts[0]), parseInt(parts[1])-1+1, 0);
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  return Math.ceil((exp - today) / (1000*60*60*24));
+}
+
+function pushHist(type, nome, detail) {
+  const entry = { type, nome, detail, ts: new Date().toISOString() };
+  hist.unshift(entry);
+  if (hist.length > 300) hist.length = 300;
+  saveLocal();
+  apiPost({ action:'addHist', ...entry });
+}
+
+// ══ RENDER ALL ═══════════════════════════════════════════════════════════════
+function renderAll() {
+  renderAlerts();
+  renderStats();
+  renderCharts();
+  renderTable();
+  renderHist();
+}
+
+// ══ TABS ═════════════════════════════════════════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['dashboard','stock','historico','config'][i]===id);
+  });
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  if (id==='dashboard') renderCharts();
+  if (id==='historico') renderHist();
+}
+
+// ══ ALERTS ═══════════════════════════════════════════════════════════════════
+function renderAlerts() {
+  // Stock baixo
+  const low = data.filter(i=>status(i)!=='ok');
+  const banner = document.getElementById('alertBanner');
+  const items = document.getElementById('alertItems');
+  if (!low.length) { banner.classList.remove('show'); }
+  else {
+    banner.classList.add('show');
+    items.innerHTML = low.map(i=>{
+      const s = status(i);
+      const cls = s==='danger'?'esgotado':'';
+      const txt = s==='danger'?(i.qty===0?'ESGOTADO':`Crítico: ${i.qty}`):`Baixo: ${i.qty}/${i.min} ${i.unit}`;
+      return `<span class="alert-chip ${cls}">${esc(i.nome)} — ${txt}</span>`;
+    }).join('');
+  }
+
+  // Validades
+  const expItems = data.filter(i => {
+    const es = expiryStatus(i.validade);
+    return es === 'expired' || es === 'expiry-warn';
+  });
+  const expiryBanner = document.getElementById('expiryBanner');
+  const expiryItems = document.getElementById('expiryItems');
+  if (!expItems.length) { expiryBanner.classList.remove('show'); }
+  else {
+    expiryBanner.classList.add('show');
+    expiryItems.innerHTML = expItems.map(i=>{
+      const es = expiryStatus(i.validade);
+      const days = expiryDaysLeft(i.validade);
+      const cls = es === 'expired' ? 'expired' : '';
+      const txt = es === 'expired' ? 'EXPIRADO' : `${days}d restantes`;
+      return `<span class="expiry-chip ${cls}">${esc(i.nome)} — ${expiryLabel(i.validade)} (${txt})</span>`;
+    }).join('');
+  }
+}
+
+// ══ STATS ════════════════════════════════════════════════════════════════════
+function renderStats() {
+  const ok     = data.filter(i=>status(i)==='ok').length;
+  const warn   = data.filter(i=>status(i)==='warn').length;
+  const danger = data.filter(i=>status(i)==='danger').length;
+  const expiry = data.filter(i=>{ const es=expiryStatus(i.validade); return es==='expired'||es==='expiry-warn'; }).length;
+  document.getElementById('statsGrid').innerHTML=`
+    <div class="stat ok"><div class="stat-val">${ok}</div><div class="stat-lbl">Normal</div></div>
+    <div class="stat warn"><div class="stat-val">${warn}</div><div class="stat-lbl">Stock Baixo</div></div>
+    <div class="stat danger"><div class="stat-val">${danger}</div><div class="stat-lbl">Crítico / Esgotado</div></div>
+    ${expiry>0?`<div class="stat expiry"><div class="stat-val">${expiry}</div><div class="stat-lbl">Validade!</div></div>`:''}
+    <div class="stat total"><div class="stat-val">${data.length}</div><div class="stat-lbl">Total de Materiais</div></div>
+  `;
+}
+
+// ══ CHARTS ═══════════════════════════════════════════════════════════════════
+function renderCharts() {
+  renderStats();
+  const ok=data.filter(i=>status(i)==='ok').length;
+  const warn=data.filter(i=>status(i)==='warn').length;
+  const danger=data.filter(i=>status(i)==='danger').length;
+
+  const labels=data.map(i=>i.nome.length>16?i.nome.slice(0,14)+'…':i.nome);
+  const colors=data.map(i=>({ok:'#2E7D53',warn:'#A0600A',danger:'#A82233'}[status(i)]));
+
+  if(chartBar) chartBar.destroy();
+  chartBar=new Chart(document.getElementById('chartBar'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {label:'Quantidade',data:data.map(i=>i.qty),backgroundColor:colors,borderRadius:5},
+      {label:'Mínimo',data:data.map(i=>i.min),backgroundColor:'rgba(58,60,66,0.12)',borderRadius:5}
+    ]},
+    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{font:{size:11}}}},
+      scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:11}}}}}
+  });
+
+  if(chartDonut) chartDonut.destroy();
+  chartDonut=new Chart(document.getElementById('chartDonut'),{
+    type:'doughnut',
+    data:{labels:['Normal','Baixo','Crítico'],datasets:[{data:[ok,warn,danger],backgroundColor:['#2E7D53','#A0600A','#A82233'],borderWidth:0}]},
+    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}}}
+  });
+
+  const cats={};
+  data.forEach(i=>{cats[i.cat]=(cats[i.cat]||0)+i.qty;});
+  if(chartCat) chartCat.destroy();
+  chartCat=new Chart(document.getElementById('chartCat'),{
+    type:'bar',
+    data:{labels:Object.keys(cats),datasets:[{label:'Total em Stock',data:Object.values(cats),backgroundColor:'#A82233',borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},
+      scales:{x:{beginAtZero:true,ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}
+  });
+}
+
+// ══ TABLE ════════════════════════════════════════════════════════════════════
+function renderTable() {
+  const q=(document.getElementById('searchInp').value||'').toLowerCase();
+  const cat=document.getElementById('filterCat').value;
+  const st=document.getElementById('filterStatus').value;
+
+  const cats=[...new Set(data.map(i=>i.cat))];
+  const sel=document.getElementById('filterCat');
+  const cur=sel.value;
+  sel.innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
+
+  let filtered=data.filter(i=>{
+    if(q&&!i.nome.toLowerCase().includes(q)&&!i.cat.toLowerCase().includes(q)&&!i.fornecedor.toLowerCase().includes(q)) return false;
+    if(cat&&i.cat!==cat) return false;
+    if(st) {
+      if(st==='expiry-warn'||st==='expired') {
+        if(expiryStatus(i.validade)!==st) return false;
+      } else {
+        if(status(i)!==st) return false;
+      }
+    }
+    return true;
+  });
+
+  document.getElementById('emptyState').style.display=filtered.length===0?'':'none';
+  document.getElementById('tableBody').innerHTML=filtered.map(i=>{
+    const es = expiryStatus(i.validade);
+    let expiryHtml = '';
+    if (i.validade) {
+      const days = expiryDaysLeft(i.validade);
+      const cls = es === 'expired' ? 'expired' : es === 'expiry-warn' ? 'warn' : 'ok';
+      const icon = es === 'expired' ? '💀' : es === 'expiry-warn' ? '⚠️' : '✅';
+      const txt = es === 'expired' ? 'EXPIRADO' : `${days}d`;
+      expiryHtml = `<div class="expiry-date ${cls}">${icon} ${expiryLabel(i.validade)} <span style="opacity:0.7">(${txt})</span></div>`;
+    }
+
+    let expiryBadge = '';
+    if (es === 'expired') expiryBadge = `<span class="badge badge-expired" style="margin-left:4px;font-size:0.65rem">💀 Expirado</span>`;
+    else if (es === 'expiry-warn') expiryBadge = `<span class="badge badge-expiry" style="margin-left:4px;font-size:0.65rem">🗓️ Validade</span>`;
+
+    return `
+    <tr>
+      <td>
+        <div class="mat-name">${esc(i.nome)}${expiryBadge}</div>
+        ${i.fornecedor||i.notes?`<div class="mat-note">${[i.fornecedor,i.notes].filter(Boolean).map(esc).join(' · ')}</div>`:''}
+      </td>
+      <td><span class="cat-tag">${esc(i.cat)}</span></td>
+      <td>
+        <div class="qty-ctrl">
+          <button class="qty-btn minus" onclick="adjustQty('${i.id}',-1)">−</button>
+          <span class="qty-val">${i.qty}</span>
+          <button class="qty-btn plus" onclick="adjustQty('${i.id}',1)">+</button>
+          <span style="color:var(--muted);font-size:0.76rem;margin-left:2px">${esc(i.unit)}</span>
+        </div>
+      </td>
+      <td style="color:var(--muted);font-size:0.84rem">${i.min} ${esc(i.unit)}</td>
+      <td>${i.validade ? expiryHtml : '<span style="color:var(--border);font-size:0.75rem">—</span>'}</td>
+      <td>${badge(i)}</td>
+      <td>
+        <div class="td-actions">
+          <button class="btn btn-sm btn-saida" onclick="openSaida('${i.id}')" title="Retirar do armário">📤 Saída</button>
+          <button class="btn btn-sm btn-primary" onclick="openEntrada('${i.id}')">📥</button>
+          <button class="btn btn-sm btn-ghost" onclick="editMat('${i.id}')">✏️</button>
+          <button class="btn btn-sm btn-del" onclick="deleteMat('${i.id}')">🗑️</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ══ ADJUST QTY (botões ± rápidos) ════════════════════════════════════════════
+async function adjustQty(id, delta) {
+  const i=data.find(x=>x.id===id); if(!i) return;
+  const prev=i.qty;
+  i.qty=Math.max(0,i.qty+delta);
+  saveLocal(); renderTable(); renderAlerts();
+  pushHist(delta>0?'in':'out',i.nome,`${delta>0?'+':''}${delta} ${i.unit} (${prev}→${i.qty})`);
+  setSyncState('syncing','A guardar…');
+  await apiPost({action:'update',...i});
+  setSyncState('ok','Guardado');
+  toast(delta>0?`+1 em ${i.nome}`:`-1 em ${i.nome}`);
+}
+
+// ══ SAÍDA MANUAL ══════════════════════════════════════════════════════════════
+function openSaida(id) {
+  saidaId = id;
+  const i = data.find(x=>x.id===id);
+  document.getElementById('saidaInfo').textContent = `${i.nome} — Stock actual: ${i.qty} ${i.unit}`;
+  document.getElementById('saidaQty').value = 1;
+  document.getElementById('saidaQty').max = i.qty;
+  document.getElementById('saidaNota').value = '';
+  document.getElementById('saidaBg').classList.add('open');
+  setTimeout(()=>document.getElementById('saidaQty').focus(), 50);
+}
+function closeSaida() { document.getElementById('saidaBg').classList.remove('open'); saidaId = null; }
+
+async function confirmSaida() {
+  const q = parseInt(document.getElementById('saidaQty').value);
+  const nota = document.getElementById('saidaNota').value.trim();
+  if (!q || q < 1) { alert('Quantidade inválida.'); return; }
+  const i = data.find(x=>x.id===saidaId);
+  if (q > i.qty) { alert(`Só tens ${i.qty} ${i.unit} em stock!`); return; }
+  const prev = i.qty;
+  i.qty -= q;
+  saveLocal();
+  pushHist('out', i.nome, `-${q} ${i.unit} (${prev}→${i.qty})${nota?' — '+nota:''}`);
+  setSyncState('syncing','A guardar…');
+  await apiPost({action:'update',...i});
+  setSyncState('ok','Guardado');
+  toast(`📤 ${q} retirado(s) de ${i.nome}`);
+  closeSaida(); renderAll();
+}
+
+// ══ MODAL ADD/EDIT ════════════════════════════════════════════════════════════
+function openModal(id) {
+  editId=id||null;
+  document.getElementById('modalTitle').textContent=id?'Editar Material':'Novo Material';
+  if(id) {
+    const i=data.find(x=>x.id===id);
+    document.getElementById('fNome').value=i.nome;
+    document.getElementById('fCat').value=i.cat;
+    document.getElementById('fQty').value=i.qty;
+    document.getElementById('fMin').value=i.min;
+    document.getElementById('fUnit').value=i.unit||'';
+    document.getElementById('fForn').value=i.fornecedor||'';
+    document.getElementById('fValidade').value=i.validade||'';
+    document.getElementById('fNotes').value=i.notes||'';
+  } else {
+    ['fNome','fQty','fMin','fUnit','fForn','fValidade','fNotes'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('fCat').value='Consumíveis';
+  }
+  document.getElementById('modalBg').classList.add('open');
+  setTimeout(()=>document.getElementById('fNome').focus(),50);
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('open'); editId=null; }
+function editMat(id){ openModal(id); }
+
+async function saveMat() {
+  const nome=document.getElementById('fNome').value.trim();
+  const qty=parseInt(document.getElementById('fQty').value);
+  const min=parseInt(document.getElementById('fMin').value);
+  if(!nome||isNaN(qty)||isNaN(min)){ alert('Preenche os campos obrigatórios (nome, quantidade e mínimo).'); return; }
+  const item={
+    nome, cat:document.getElementById('fCat').value, qty, min,
+    unit:document.getElementById('fUnit').value.trim()||'unid',
+    fornecedor:document.getElementById('fForn').value.trim(),
+    validade:document.getElementById('fValidade').value||'',
+    notes:document.getElementById('fNotes').value.trim()
+  };
+
+  setSyncState('syncing','A guardar…');
+  if(editId) {
+    const i=data.find(x=>x.id===editId);
+    const prev=i.qty;
+    Object.assign(i,item);
+    saveLocal();
+    pushHist('edit',nome,`Editado — qty: ${prev}→${qty}`);
+    await apiPost({action:'update',id:editId,...item});
+    toast('Material atualizado!');
+  } else {
+    const id=uid();
+    data.push({id,...item});
+    saveLocal();
+    pushHist('in',nome,`Adicionado — qty: ${qty}`);
+    await apiPost({action:'add',id,...item});
+    toast('Material adicionado!');
+  }
+  setSyncState('ok','Guardado');
+  closeModal(); renderAll();
+}
+
+// ══ ENTRADA ══════════════════════════════════════════════════════════════════
+function openEntrada(id) {
+  entradaId=id;
+  const i=data.find(x=>x.id===id);
+  document.getElementById('entradaInfo').textContent=`${i.nome} — Stock atual: ${i.qty} ${i.unit}`;
+  document.getElementById('entradaQty').value=1;
+  document.getElementById('entradaNota').value='';
+  document.getElementById('entradaValidade').value=i.validade||'';
+  document.getElementById('entradaBg').classList.add('open');
+  setTimeout(()=>document.getElementById('entradaQty').focus(),50);
+}
+function closeEntrada(){ document.getElementById('entradaBg').classList.remove('open'); entradaId=null; }
+
+async function confirmEntrada() {
+  const q=parseInt(document.getElementById('entradaQty').value);
+  if(!q||q<1){ alert('Quantidade inválida.'); return; }
+  const nota=document.getElementById('entradaNota').value.trim();
+  const novaValidade=document.getElementById('entradaValidade').value||'';
+  const i=data.find(x=>x.id===entradaId);
+  const prev=i.qty;
+  i.qty+=q;
+  if(novaValidade) i.validade=novaValidade;
+  saveLocal();
+  pushHist('in',i.nome,`+${q} ${i.unit} (${prev}→${i.qty})${nota?' — '+nota:''}${novaValidade?' | Validade: '+novaValidade:''}`);
+  setSyncState('syncing','A guardar…');
+  await apiPost({action:'update',...i});
+  setSyncState('ok','Guardado');
+  toast(`+${q} adicionados a ${i.nome}`);
+  closeEntrada(); renderAll();
+}
+
+// ══ DELETE ════════════════════════════════════════════════════════════════════
+async function deleteMat(id) {
+  const i=data.find(x=>x.id===id);
+  if(!confirm(`Eliminar "${i.nome}"?\nEsta ação não pode ser desfeita.`)) return;
+  data=data.filter(x=>x.id!==id);
+  saveLocal();
+  pushHist('out',i.nome,'Material eliminado');
+  setSyncState('syncing','A eliminar…');
+  await apiPost({action:'delete',id});
+  setSyncState('ok','Guardado');
+  renderAll(); toast('Material eliminado!');
+}
+
+// ══ HISTORICO ════════════════════════════════════════════════════════════════
+function renderHist() {
+  const h=hist.length? hist : JSON.parse(localStorage.getItem(LHIST)||'[]');
+  const list=document.getElementById('histList');
+  if(!h.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Sem movimentos ainda.</p></div>'; return; }
+  const icons={in:'📥',out:'📤',edit:'✏️'};
+  list.innerHTML=h.slice(0,100).map(e=>{
+    const d=new Date(e.ts);
+    const date=isNaN(d)?e.ts:d.toLocaleDateString('pt-PT')+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="hist-item">
+      <div class="hist-ico ${e.type}">${icons[e.type]||'•'}</div>
+      <div class="hist-body">
+        <div class="hist-name">${esc(e.nome)}</div>
+        <div class="hist-detail">${esc(e.detail)}</div>
+      </div>
+      <div class="hist-time">${date}</div>
+    </div>`;
+  }).join('');
+}
+
+async function clearHist() {
+  if(!confirm('Limpar todo o histórico?')) return;
+  hist=[];
+  localStorage.setItem(LHIST,'[]');
+  renderHist();
+  await apiPost({action:'clearHist'});
+}
+
+// ══ EXPORT ════════════════════════════════════════════════════════════════════
+function exportCSV() {
+  const rows=[['Nome','Categoria','Quantidade','Mínimo','Unidade','Fornecedor','Validade','Estado','Notas']];
+  data.forEach(i=>rows.push([
+    i.nome, i.cat, i.qty, i.min, i.unit, i.fornecedor, i.validade||'',
+    status(i)==='ok'?'Normal':status(i)==='warn'?'Baixo':'Crítico', i.notes
+  ]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='LMC_Stock_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); toast('Ficheiro exportado!');
+}
+
+// ══ CONFIG ════════════════════════════════════════════════════════════════════
+async function saveConfig() {
+  const url=document.getElementById('configUrl').value.trim();
+  if(!url){ alert('Introduz um URL válido.'); return; }
+  apiUrl=url;
+  isDemoMode=false;
+  localStorage.setItem(LKEY,url);
+  localStorage.removeItem(LDEMO);
+  await syncNow();
+}
+
+function saveEmailConfig() {
+  const email = document.getElementById('configEmail').value.trim();
+  if (!email) { alert('Introduz um email válido.'); return; }
+  localStorage.setItem(LEMAIL, email);
+  toast('✅ Email guardado! Lembra-te de o colocar no script do Google Apps Script.');
+}
+
+async function sendTestAlert() {
+  if (isDemoMode || !apiUrl) {
+    toast('⚠️ Não está ligado ao Google Sheets');
+    return;
+  }
+  setSyncState('syncing','A enviar alerta…');
+  try {
+    const res = await fetch(apiUrl + '?action=sendAlert');
+    const j = await res.json();
+    if (j.ok) {
+      toast('📧 Alerta enviado por email!');
+    } else {
+      toast('⚠️ Sem alertas para enviar (tudo OK)');
+    }
+    setSyncState('ok','Ligado');
+  } catch(e) {
+    setSyncState('error','Erro');
+    toast('❌ Erro ao enviar — verifica o script');
+  }
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(APPS_SCRIPT).then(()=>toast('✅ Script copiado!')).catch(()=>{
+    const ta=document.createElement('textarea');
+    ta.value=APPS_SCRIPT; document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✅ Script copiado!');
+  });
+}
+
+// ══ UTILS ════════════════════════════════════════════════════════════════════
+function closeBg(e,id){
+  if(e.target===document.getElementById(id)) {
+    if(id==='modalBg') closeModal();
+    else if(id==='entradaBg') closeEntrada();
+    else if(id==='saidaBg') closeSaida();
+  }
+}
+function toast(msg,dur=2800){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
+}
+</script>
+</body>
+</html>
