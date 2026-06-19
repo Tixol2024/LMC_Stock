@@ -3,625 +3,496 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LMC · Gestão de Stock</title>
+<title>LMC - Clínica Dentária</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap');
+:root{
+  --ch:#3A3C42;--chd:#2A2C30;--chl:#50545C;
+  --cr:#A82233;--crd:#821929;--crl:#C4374A;--crxl:#F5E0E3;
+  --wh:#FFFFFF;--off:#F7F7F8;--bd:#E2E2E6;--mu:#8A8D96;
+  --ok:#2E7D53;--okb:#E6F4ED;
+  --wn:#A0600A;--wnb:#FEF3DC;
+  --dg:#A82233;--dgb:#F5E0E3;
+  --ex:#7B3F00;--exb:#FFF0E0;
+  --ag:#1A5276;--agb:#D6EAF8;
+  --r:12px;--sh:0 2px 14px rgba(42,44,48,.09);--shm:0 6px 30px rgba(42,44,48,.15);
+  --fd:'Raleway',sans-serif;--fb:'Inter',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--fb);background:var(--off);color:var(--ch);min-height:100vh;font-size:15px;}
 
-  :root {
-    --charcoal:   #3A3C42;
-    --charcoal-d: #2A2C30;
-    --charcoal-l: #50545C;
-    --crimson:    #A82233;
-    --crimson-d:  #821929;
-    --crimson-l:  #C4374A;
-    --crimson-xl: #F5E0E3;
-    --white:      #FFFFFF;
-    --offwhite:   #F7F7F8;
-    --border:     #E2E2E6;
-    --muted:      #8A8D96;
-    --ok:         #2E7D53;
-    --ok-bg:      #E6F4ED;
-    --warn:       #A0600A;
-    --warn-bg:    #FEF3DC;
-    --danger:     #A82233;
-    --danger-bg:  #F5E0E3;
-    --expiry-warn: #7B3FA0;
-    --expiry-warn-bg: #F3E8FF;
-    --radius:     12px;
-    --shadow:     0 2px 14px rgba(42,44,48,0.09);
-    --shadow-md:  0 6px 30px rgba(42,44,48,0.15);
-    --font-display: 'Raleway', sans-serif;
-    --font-body:    'Inter', sans-serif;
-  }
+/* HEADER */
+header{background:var(--chd);color:var(--wh);padding:0 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;height:58px;box-shadow:0 2px 12px rgba(0,0,0,.28);}
+.hbrand{display:flex;align-items:center;gap:10px;}
+.hbrand svg{width:34px;height:34px;flex-shrink:0;}
+.brand-lmc{font-family:var(--fd);font-size:1.1rem;font-weight:800;letter-spacing:-.5px;color:var(--wh);}
+.brand-lmc span{color:var(--crl);}
+.brand-sub{font-size:.62rem;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;}
+.hright{display:flex;align-items:center;gap:7px;}
+.sdot{width:7px;height:7px;border-radius:50%;background:#6FCF97;flex-shrink:0;}
+.sdot.syncing{background:#F2C94C;animation:pulse 1s infinite;}
+.sdot.error{background:var(--crl);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.slabel{font-size:.70rem;color:rgba(255,255,255,.45);margin-right:4px;}
+.hbtn{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.18);color:var(--wh);border-radius:8px;padding:6px 11px;cursor:pointer;font-size:.76rem;font-weight:600;font-family:var(--fb);display:flex;align-items:center;gap:4px;transition:background .15s;white-space:nowrap;}
+.hbtn:hover{background:rgba(255,255,255,.20);}
+.hbtn.cr{background:var(--cr);border-color:var(--crl);}
+.hbtn.cr:hover{background:var(--crd);}
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body { font-family: var(--font-body); background: var(--offwhite); color: var(--charcoal); min-height: 100vh; font-size: 15px; }
+/* TABS */
+.tabs{background:var(--ch);display:flex;overflow-x:auto;padding:0 14px;border-bottom:1px solid rgba(255,255,255,.08);scrollbar-width:none;}
+.tabs::-webkit-scrollbar{display:none;}
+.tab{padding:13px 15px;cursor:pointer;font-size:.78rem;font-weight:600;font-family:var(--fb);color:rgba(255,255,255,.4);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap;transition:color .15s,border-color .15s;}
+.tab.active{color:var(--wh);border-bottom-color:var(--crl);}
+.tab:hover:not(.active){color:rgba(255,255,255,.75);}
 
-  /* ── SETUP SCREEN ── */
-  #setupScreen {
-    position: fixed; inset: 0; background: var(--charcoal-d);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000; padding: 20px;
-  }
-  #setupScreen.hidden { display: none; }
-  .setup-card {
-    background: var(--white); border-radius: 20px; padding: 36px 32px;
-    max-width: 500px; width: 100%; box-shadow: var(--shadow-md);
-  }
-  .setup-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
-  .setup-logo svg { width: 44px; height: 44px; }
-  .setup-logo-text { font-family: var(--font-display); }
-  .setup-logo-text .lmc { font-size: 1.6rem; font-weight: 800; color: var(--charcoal-d); letter-spacing: -1px; }
-  .setup-logo-text .sub { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
-  .setup-card h2 { font-family: var(--font-display); font-size: 1.2rem; color: var(--charcoal-d); margin-bottom: 8px; }
-  .setup-card p { font-size: 0.84rem; color: var(--muted); margin-bottom: 20px; line-height: 1.55; }
-  .setup-steps { background: var(--offwhite); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
-  .setup-step { font-size: 0.80rem; color: var(--charcoal); margin-bottom: 8px; line-height: 1.5; }
-  .setup-step:last-child { margin-bottom: 0; }
-  .setup-step strong { color: var(--crimson); }
-  .setup-field label { display: block; font-size: 0.75rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
-  .setup-field input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-size: 0.88rem; color: var(--charcoal); font-family: var(--font-body); outline: none; transition: border-color 0.15s; margin-bottom: 14px; }
-  .setup-field input:focus { border-color: var(--crimson); }
-  .btn-setup { width: 100%; background: var(--crimson); color: var(--white); border: none; border-radius: 10px; padding: 13px; font-size: 0.92rem; font-weight: 700; font-family: var(--font-display); cursor: pointer; transition: background 0.15s; }
-  .btn-setup:hover { background: var(--crimson-d); }
-  .setup-demo { text-align: center; margin-top: 12px; }
-  .setup-demo a { font-size: 0.80rem; color: var(--muted); cursor: pointer; text-decoration: underline; }
+/* MAIN */
+main{padding:18px 14px;max-width:1160px;margin:0 auto;}
+.section{display:none;}.section.active{display:block;}
 
-  /* ── HEADER ── */
-  header {
-    background: var(--charcoal-d);
-    color: var(--white);
-    padding: 0 20px;
-    display: flex; align-items: center; justify-content: space-between;
-    position: sticky; top: 0; z-index: 100;
-    height: 60px;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
-  }
-  .header-brand { display: flex; align-items: center; gap: 12px; }
-  .header-brand svg { width: 36px; height: 36px; flex-shrink: 0; }
-  .brand-text { font-family: var(--font-display); }
-  .brand-lmc { font-size: 1.15rem; font-weight: 800; letter-spacing: -0.5px; color: var(--white); }
-  .brand-lmc span { color: var(--crimson-l); }
-  .brand-sub { font-size: 0.65rem; color: rgba(255,255,255,0.45); text-transform: uppercase; letter-spacing: 1px; }
-  .header-right { display: flex; align-items: center; gap: 8px; }
-  .sync-status { font-size: 0.72rem; color: rgba(255,255,255,0.5); display: flex; align-items: center; gap: 5px; }
-  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #6FCF97; flex-shrink: 0; }
-  .sync-dot.syncing { background: #F2C94C; animation: pulse 1s infinite; }
-  .sync-dot.error { background: var(--crimson-l); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-  .hbtn {
-    background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.18);
-    color: var(--white); border-radius: 8px; padding: 6px 12px; cursor: pointer;
-    font-size: 0.78rem; font-weight: 600; font-family: var(--font-body);
-    display: flex; align-items: center; gap: 5px; transition: background 0.15s; white-space: nowrap;
-  }
-  .hbtn:hover { background: rgba(255,255,255,0.18); }
-  .hbtn.crimson { background: var(--crimson); border-color: var(--crimson-l); }
-  .hbtn.crimson:hover { background: var(--crimson-d); }
+/* BANNERS */
+.banner{border-radius:var(--r);padding:12px 16px;margin-bottom:12px;display:none;}
+.banner.show{display:block;}
+.banner-stock{background:linear-gradient(135deg,#7A1525,var(--cr));box-shadow:0 4px 16px rgba(168,34,51,.28);}
+.banner-expire{background:linear-gradient(135deg,#5C2800,#A05000);box-shadow:0 4px 16px rgba(120,60,0,.28);}
+.banner-title{color:#fff;font-size:.80rem;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:6px;}
+.chips{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.22);border-radius:20px;padding:3px 11px;font-size:.73rem;color:#fff;font-weight:600;}
+.chip.crit{background:rgba(0,0,0,.22);}
 
-  /* ── TABS ── */
-  .tabs {
-    background: var(--charcoal); display: flex;
-    overflow-x: auto; padding: 0 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
-    scrollbar-width: none;
-  }
-  .tabs::-webkit-scrollbar { display: none; }
-  .tab {
-    padding: 14px 16px; cursor: pointer; font-size: 0.80rem; font-weight: 600;
-    font-family: var(--font-body); color: rgba(255,255,255,0.45);
-    border-bottom: 2px solid transparent; margin-bottom: -1px;
-    white-space: nowrap; transition: color 0.15s, border-color 0.15s; letter-spacing: 0.3px;
-  }
-  .tab.active { color: var(--white); border-bottom-color: var(--crimson-l); }
-  .tab:hover:not(.active) { color: rgba(255,255,255,0.75); }
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:18px;}
+.stat{background:var(--wh);border-radius:var(--r);padding:14px;box-shadow:var(--sh);position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;top:0;left:0;width:4px;height:100%;}
+.stat.ok::after{background:var(--ok);}
+.stat.wn::after{background:var(--wn);}
+.stat.dg::after{background:var(--cr);}
+.stat.ex::after{background:#A05000;}
+.stat.ag::after{background:var(--ag);}
+.stat.tt::after{background:var(--chl);}
+.stat-val{font-family:var(--fd);font-size:1.9rem;font-weight:800;line-height:1;}
+.stat.ok .stat-val{color:var(--ok);}
+.stat.wn .stat-val{color:var(--wn);}
+.stat.dg .stat-val{color:var(--cr);}
+.stat.ex .stat-val{color:#A05000;}
+.stat.ag .stat-val{color:var(--ag);}
+.stat-lbl{font-size:.66rem;color:var(--mu);text-transform:uppercase;letter-spacing:.5px;margin-top:4px;font-weight:600;}
 
-  /* ── MAIN ── */
-  main { padding: 20px 16px; max-width: 1120px; margin: 0 auto; }
-  .section { display: none; }
-  .section.active { display: block; }
+/* CHARTS */
+.charts-row{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px;}
+@media(max-width:600px){.charts-row{grid-template-columns:1fr;}}
+.chart-card{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.chart-title{font-family:var(--fd);font-size:.74rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;}
 
-  /* ── ALERT BANNER ── */
-  .alert-banner {
-    background: linear-gradient(135deg, #7A1525 0%, var(--crimson) 100%);
-    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px;
-    display: none; box-shadow: 0 4px 16px rgba(168,34,51,0.30);
-  }
-  .alert-banner.show { display: block; }
-  .alert-banner-title { color: #fff; font-size: 0.82rem; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
-  .alert-items-wrap { display: flex; flex-wrap: wrap; gap: 6px; }
-  .alert-chip {
-    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #fff; font-weight: 600;
-  }
-  .alert-chip.esgotado { background: rgba(0,0,0,0.25); }
+/* TOOLBAR */
+.toolbar{display:flex;gap:9px;margin-bottom:14px;flex-wrap:wrap;align-items:center;}
+.inp{padding:9px 12px;border:1.5px solid var(--bd);border-radius:9px;font-size:.83rem;color:var(--ch);font-family:var(--fb);background:var(--wh);outline:none;transition:border-color .15s;}
+.inp:focus{border-color:var(--cr);}
+.inp-search{flex:1;min-width:140px;}
+select.inp{cursor:pointer;}
+.btn{border:none;border-radius:9px;padding:9px 15px;font-size:.83rem;font-weight:700;font-family:var(--fb);cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.btn-p{background:var(--cr);color:var(--wh);}
+.btn-p:hover{background:var(--crd);}
+.btn-g{background:var(--wh);color:var(--ch);border:1.5px solid var(--bd);}
+.btn-g:hover{border-color:var(--cr);color:var(--cr);}
+.btn-a{background:var(--ag);color:var(--wh);}
+.btn-a:hover{background:#154360;}
+.btn-sm{padding:5px 9px;font-size:.73rem;border-radius:7px;}
+.btn-del{background:var(--dgb);color:var(--dg);}
+.btn-del:hover{background:var(--cr);color:var(--wh);}
 
-  /* ── EXPIRY BANNER ── */
-  .expiry-banner {
-    background: linear-gradient(135deg, #5B2D80 0%, #8B44C0 100%);
-    border-radius: var(--radius); padding: 14px 18px; margin-bottom: 12px;
-    display: none; box-shadow: 0 4px 16px rgba(123,63,160,0.30);
-  }
-  .expiry-banner.show { display: block; }
-  .expiry-banner .alert-banner-title { color: #fff; }
-  .expiry-chip {
-    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
-    border-radius: 20px; padding: 3px 12px; font-size: 0.75rem; color: #fff; font-weight: 600;
-  }
-  .expiry-chip.expired { background: rgba(0,0,0,0.30); }
+/* TABLE */
+.tw{overflow-x:auto;border-radius:var(--r);box-shadow:var(--sh);}
+table{width:100%;border-collapse:collapse;background:var(--wh);}
+thead tr{background:var(--chd);}
+thead th{color:rgba(255,255,255,.72);font-size:.70rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:11px 12px;text-align:left;white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--bd);transition:background .1s;}
+tbody tr:hover{background:#F9F0F1;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr.re-d{background:#FFF5F5;}
+tbody tr.re-w{background:#FFFAF0;}
+td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
+.mn{font-weight:600;color:var(--chd);}
+.msub{font-size:.70rem;color:var(--mu);margin-top:2px;}
+.ctag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;background:var(--off);color:var(--chl);border:1px solid var(--bd);}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:.70rem;font-weight:700;}
+.b-ok{background:var(--okb);color:var(--ok);}
+.b-wn{background:var(--wnb);color:var(--wn);}
+.b-dg{background:var(--dgb);color:var(--dg);}
+.b-ew{background:var(--exb);color:var(--ex);}
+.b-ed{background:var(--dgb);color:var(--dg);}
+.etag{display:inline-flex;align-items:center;gap:3px;font-size:.70rem;font-weight:600;padding:2px 7px;border-radius:6px;margin-top:2px;}
+.e-ok{color:var(--mu);}
+.e-wn{background:var(--exb);color:var(--ex);}
+.e-dg{background:var(--dgb);color:var(--dg);}
+.qty-ctrl{display:flex;align-items:center;gap:5px;}
+.qbtn{width:25px;height:25px;border:none;border-radius:7px;cursor:pointer;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;transition:transform .1s;}
+.qbtn:hover{transform:scale(1.15);}
+.qbtn.m{background:var(--dgb);color:var(--dg);}
+.qbtn.p{background:var(--okb);color:var(--ok);}
+.qval{font-family:var(--fd);font-weight:800;min-width:26px;text-align:center;font-size:.93rem;color:var(--chd);}
+.tda{display:flex;gap:4px;flex-wrap:wrap;}
 
-  /* ── STATS ── */
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 20px; }
-  .stat {
-    background: var(--white); border-radius: var(--radius); padding: 18px 16px;
-    box-shadow: var(--shadow); position: relative; overflow: hidden;
-  }
-  .stat::after { content:''; position:absolute; top:0; left:0; width:4px; height:100%; background: var(--border); }
-  .stat.ok::after { background: var(--ok); }
-  .stat.warn::after { background: var(--warn); }
-  .stat.danger::after { background: var(--crimson); }
-  .stat.total::after { background: var(--charcoal-l); }
-  .stat.expiry::after { background: var(--expiry-warn); }
-  .stat-val { font-family: var(--font-display); font-size: 2rem; font-weight: 800; line-height: 1; color: var(--charcoal-d); }
-  .stat.ok .stat-val { color: var(--ok); }
-  .stat.warn .stat-val { color: var(--warn); }
-  .stat.danger .stat-val { color: var(--crimson); }
-  .stat.expiry .stat-val { color: var(--expiry-warn); }
-  .stat-lbl { font-size: 0.70rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 5px; font-weight: 600; }
+/* MODAL */
+.mbg{display:none;position:fixed;inset:0;background:rgba(30,30,35,.55);z-index:200;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(3px);}
+.mbg.open{display:flex;}
+.modal{background:var(--wh);border-radius:18px;padding:24px 22px;width:100%;max-width:480px;box-shadow:var(--shm);max-height:93vh;overflow-y:auto;}
+.mh{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.mh h2{font-family:var(--fd);font-size:1.05rem;font-weight:800;color:var(--chd);}
+.mcls{background:var(--off);border:none;border-radius:8px;width:28px;height:28px;cursor:pointer;font-size:1rem;color:var(--mu);display:flex;align-items:center;justify-content:center;}
+.mcls:hover{background:var(--dgb);color:var(--dg);}
+.fg{margin-bottom:12px;}
+.fg label{display:block;font-size:.70rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;}
+.fg input,.fg select,.fg textarea{width:100%;padding:9px 11px;border:1.5px solid var(--bd);border-radius:9px;font-size:.86rem;color:var(--ch);font-family:var(--fb);background:var(--off);outline:none;transition:border-color .15s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--cr);background:var(--wh);}
+.fg textarea{resize:vertical;min-height:70px;}
+.fgr{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.sdiv{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--cr);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--crxl);}
+.mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);}
 
-  /* ── CHARTS ── */
-  .charts-row { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
-  @media(max-width:640px){ .charts-row { grid-template-columns: 1fr; } }
-  .chart-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-  .chart-title { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 16px; }
+/* AGENDA */
+.agenda-grid{display:grid;grid-template-columns:300px 1fr;gap:16px;}
+@media(max-width:700px){.agenda-grid{grid-template-columns:1fr;}}
+.cal-wrap{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.cal-title{font-family:var(--fd);font-size:1rem;font-weight:800;color:var(--chd);}
+.cal-nav{background:none;border:1.5px solid var(--bd);border-radius:8px;width:30px;height:30px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ch);font-size:.9rem;}
+.cal-nav:hover{border-color:var(--cr);color:var(--cr);}
+.cal-days-header{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+.cal-dh{text-align:center;font-size:.65rem;font-weight:700;color:var(--mu);text-transform:uppercase;padding:4px 0;}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day{aspect-ratio:1;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:.80rem;font-weight:600;color:var(--ch);position:relative;transition:background .12s;}
+.cal-day:hover{background:var(--crxl);}
+.cal-day.other-month{color:var(--mu);opacity:.4;}
+.cal-day.today{background:var(--crxl);color:var(--cr);font-weight:800;}
+.cal-day.selected{background:var(--cr);color:var(--wh) !important;}
+.cal-day.has-apt::after{content:'';position:absolute;bottom:3px;width:5px;height:5px;border-radius:50%;background:var(--cr);}
+.cal-day.selected.has-apt::after{background:rgba(255,255,255,.8);}
+.apt-panel{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.apt-panel-title{font-family:var(--fd);font-size:.90rem;font-weight:800;color:var(--chd);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;}
+.apt-item{display:flex;align-items:flex-start;gap:10px;padding:10px;border-radius:10px;border:1.5px solid var(--bd);margin-bottom:8px;transition:border-color .1s;}
+.apt-item:hover{border-color:var(--crl);}
+.apt-time{font-family:var(--fd);font-weight:800;font-size:.88rem;color:var(--chd);min-width:42px;}
+.apt-body{flex:1;}
+.apt-name{font-weight:700;font-size:.86rem;color:var(--chd);}
+.apt-detail{font-size:.74rem;color:var(--mu);margin-top:2px;}
+.apt-status{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;}
+.as-marcada{background:#E8F8F5;color:#1A8A74;}
+.as-confirmada{background:var(--okb);color:var(--ok);}
+.as-cancelada{background:var(--dgb);color:var(--dg);}
+.as-concluida{background:var(--off);color:var(--mu);}
 
-  /* ── FILTER / TOOLBAR ── */
-  .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-  .inp {
-    padding: 9px 13px; border: 1.5px solid var(--border); border-radius: 9px;
-    font-size: 0.84rem; color: var(--charcoal); font-family: var(--font-body); background: var(--white);
-    outline: none; transition: border-color 0.15s;
-  }
-  .inp:focus { border-color: var(--crimson); }
-  .inp-search { flex: 1; min-width: 150px; }
-  select.inp { cursor: pointer; }
-  .btn {
-    border: none; border-radius: 9px; padding: 9px 16px; font-size: 0.84rem;
-    font-weight: 700; font-family: var(--font-body); cursor: pointer; transition: background 0.15s;
-    display: flex; align-items: center; gap: 5px; white-space: nowrap;
-  }
-  .btn-primary { background: var(--crimson); color: var(--white); }
-  .btn-primary:hover { background: var(--crimson-d); }
-  .btn-ghost { background: var(--white); color: var(--charcoal); border: 1.5px solid var(--border); }
-  .btn-ghost:hover { border-color: var(--crimson); color: var(--crimson); }
-  .btn-sm { padding: 5px 11px; font-size: 0.75rem; border-radius: 7px; }
-  .btn-del { background: var(--danger-bg); color: var(--danger); }
-  .btn-del:hover { background: var(--crimson); color: var(--white); }
-  .btn-saida { background: #FEF3DC; color: var(--warn); border: 1px solid #F0C97A; }
-  .btn-saida:hover { background: var(--warn); color: var(--white); }
+/* SMS STATUS (lista combinada no separador Consultas) */
+.sms-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;cursor:default;}
+.sms-ok{background:var(--okb);color:var(--ok);}
+.sms-pend{background:var(--wnb);color:var(--wn);}
+.sms-fail{background:var(--dgb);color:var(--dg);}
+.sms-na{background:var(--off);color:var(--mu);border:1px solid var(--bd);}
+.sms-summary{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.sms-sum-item{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;font-size:.74rem;font-weight:700;background:var(--wh);box-shadow:var(--sh);}
+.sms-sum-ok{color:var(--ok);}
+.sms-sum-pend{color:var(--wn);}
+.sms-sum-fail{color:var(--dg);}
+.sms-sum-na{color:var(--mu);}
+.apt-actions{display:flex;gap:4px;margin-top:6px;}
+.empty-apt{text-align:center;padding:36px 16px;color:var(--mu);}
+.empty-apt .ei{font-size:2rem;margin-bottom:8px;}
 
-  /* ── TABLE ── */
-  .table-wrap { overflow-x: auto; border-radius: var(--radius); box-shadow: var(--shadow); }
-  table { width: 100%; border-collapse: collapse; background: var(--white); }
-  thead tr { background: var(--charcoal); }
-  thead th { color: rgba(255,255,255,0.75); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; padding: 12px 14px; text-align: left; white-space: nowrap; font-family: var(--font-body); }
-  thead th:first-child { border-radius: var(--radius) 0 0 0; }
-  thead th:last-child { border-radius: 0 var(--radius) 0 0; }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-  tbody tr:hover { background: #F9F0F1; }
-  tbody tr:last-child { border-bottom: none; }
-  td { padding: 11px 14px; font-size: 0.84rem; vertical-align: middle; }
-  .mat-name { font-weight: 600; color: var(--charcoal-d); }
-  .mat-note { font-size: 0.73rem; color: var(--muted); margin-top: 2px; }
-  .cat-tag {
-    display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 0.70rem; font-weight: 700;
-    background: var(--offwhite); color: var(--charcoal-l); border: 1px solid var(--border);
-  }
-  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
-  .badge-ok { background: var(--ok-bg); color: var(--ok); }
-  .badge-warn { background: var(--warn-bg); color: var(--warn); }
-  .badge-danger { background: var(--danger-bg); color: var(--danger); }
-  .badge-expiry { background: var(--expiry-warn-bg); color: var(--expiry-warn); }
-  .badge-expired { background: #1a1a1a; color: #fff; }
-  .qty-ctrl { display: flex; align-items: center; gap: 6px; }
-  .qty-btn {
-    width: 26px; height: 26px; border: none; border-radius: 7px; cursor: pointer;
-    font-size: 1.1rem; font-weight: 700; display: flex; align-items: center; justify-content: center; line-height: 1;
-    transition: transform 0.1s, background 0.1s;
-  }
-  .qty-btn:hover { transform: scale(1.13); }
-  .qty-btn.minus { background: var(--danger-bg); color: var(--danger); }
-  .qty-btn.plus { background: var(--ok-bg); color: var(--ok); }
-  .qty-val { font-family: var(--font-display); font-weight: 800; min-width: 28px; text-align: center; font-size: 0.95rem; color: var(--charcoal-d); }
-  .td-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-  .expiry-date { font-size: 0.72rem; margin-top: 3px; display: flex; align-items: center; gap: 4px; }
-  .expiry-date.ok { color: var(--ok); }
-  .expiry-date.warn { color: var(--expiry-warn); font-weight: 600; }
-  .expiry-date.expired { color: var(--danger); font-weight: 700; }
+/* HIST */
+.hcard{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.hhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.hhead h3{font-family:var(--fd);font-size:.74rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;}
+.hit{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--bd);}
+.hit:last-child{border-bottom:none;}
+.hico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+.hico.in{background:var(--okb);}
+.hico.out{background:var(--dgb);}
+.hico.edit{background:#EEF0FF;}
+.hbody{flex:1;}
+.hname{font-size:.82rem;font-weight:600;color:var(--chd);}
+.hdet{font-size:.72rem;color:var(--mu);margin-top:2px;}
+.htime{font-size:.70rem;color:var(--mu);white-space:nowrap;padding-top:2px;}
 
-  /* ── EMPTY ── */
-  .empty { text-align: center; padding: 52px 20px; color: var(--muted); }
-  .empty-icon { font-size: 2.5rem; margin-bottom: 12px; }
-  .empty p { font-size: 0.88rem; }
 
-  /* ── MODAL ── */
-  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(30,30,35,0.55); z-index: 200; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(3px); }
-  .modal-bg.open { display: flex; }
-  .modal { background: var(--white); border-radius: 18px; padding: 28px 26px; width: 100%; max-width: 440px; box-shadow: var(--shadow-md); max-height: 90vh; overflow-y: auto; }
-  .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; }
-  .modal-header h2 { font-family: var(--font-display); font-size: 1.1rem; font-weight: 800; color: var(--charcoal-d); }
-  .modal-close { background: var(--offwhite); border: none; border-radius: 8px; width: 30px; height: 30px; cursor: pointer; font-size: 1rem; color: var(--muted); display: flex; align-items: center; justify-content: center; }
-  .modal-close:hover { background: var(--danger-bg); color: var(--danger); }
-  .fg { margin-bottom: 14px; }
-  .fg label { display: block; font-size: 0.73rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
-  .fg input, .fg select, .fg textarea {
-    width: 100%; padding: 10px 13px; border: 1.5px solid var(--border); border-radius: 9px;
-    font-size: 0.88rem; color: var(--charcoal); font-family: var(--font-body); background: var(--offwhite); outline: none; transition: border-color 0.15s;
-  }
-  .fg input:focus, .fg select:focus { border-color: var(--crimson); background: var(--white); }
-  .fg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .modal-footer { display: flex; gap: 10px; justify-content: flex-end; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
-  .fg-hint { font-size: 0.70rem; color: var(--muted); margin-top: 4px; }
+/* VALIDADES */
+.vcard{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
+.vcard h3{font-family:var(--fd);font-size:.74rem;font-weight:700;color:var(--mu);text-transform:uppercase;letter-spacing:.6px;margin-bottom:14px;}
+.vrow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--bd);}
+.vrow:last-child{border-bottom:none;}
 
-  /* ── SAIDA MODAL ── */
-  .saida-modal { max-width: 380px; }
-  .saida-num { font-family: var(--font-display); font-size: 2.8rem; font-weight: 800; text-align: center; color: var(--charcoal-d); width: 100%; padding: 14px; border: 2px solid var(--border); border-radius: 12px; outline: none; }
-  .saida-num:focus { border-color: var(--warn); }
-  .saida-info { background: var(--warn-bg); border-radius: 9px; padding: 11px 14px; margin-bottom: 16px; font-size: 0.82rem; color: var(--warn); font-weight: 600; border-left: 3px solid var(--warn); }
+/* EMPTY */
+.empty{text-align:center;padding:44px 16px;color:var(--mu);}
+.empty-icon{font-size:2.2rem;margin-bottom:10px;}
+.empty p{font-size:.85rem;}
 
-  /* ── HISTORICO ── */
-  .hist-card { background: var(--white); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
-  .hist-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .hist-header h3 { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
-  .hist-item { display: flex; align-items: flex-start; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); }
-  .hist-item:last-child { border-bottom: none; }
-  .hist-ico { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
-  .hist-ico.in { background: var(--ok-bg); }
-  .hist-ico.out { background: var(--danger-bg); }
-  .hist-ico.edit { background: #EEF0FF; }
-  .hist-body { flex: 1; }
-  .hist-name { font-size: 0.84rem; font-weight: 600; color: var(--charcoal-d); }
-  .hist-detail { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-  .hist-time { font-size: 0.72rem; color: var(--muted); white-space: nowrap; padding-top: 3px; }
-
-  /* ── TOAST ── */
-  #toast {
-    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(90px);
-    background: var(--charcoal-d); color: var(--white); padding: 11px 22px; border-radius: 30px;
-    font-size: 0.84rem; font-weight: 600; z-index: 999; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    box-shadow: 0 4px 24px rgba(0,0,0,0.25); pointer-events: none; font-family: var(--font-body);
-    border-left: 4px solid var(--crimson);
-  }
-  #toast.show { transform: translateX(-50%) translateY(0); }
-
-  /* ── RESPONSIVE ── */
-  @media(max-width:500px) {
-    .brand-sub, .sync-status span { display: none; }
-    .hbtn span { display: none; }
-    td { padding: 9px 10px; }
-    .td-actions { flex-direction: column; }
-  }
-
-  /* ── CONFIG PANEL ── */
-  .config-panel { background: var(--white); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); max-width: 600px; margin-bottom: 16px; }
-  .config-panel h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 800; color: var(--charcoal-d); margin-bottom: 6px; }
-  .config-panel p { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
-  .info-box { background: var(--offwhite); border-radius: 9px; padding: 14px; margin: 14px 0; border-left: 3px solid var(--crimson); }
-  .info-box p { font-size: 0.80rem; color: var(--charcoal); margin: 0; line-height: 1.55; }
-  .info-box code { background: var(--border); padding: 1px 5px; border-radius: 4px; font-size: 0.78rem; color: var(--crimson-d); }
-  .config-section-title { font-size: 0.70rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+/* TOAST */
+#toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--chd);color:var(--wh);padding:10px 20px;border-radius:30px;font-size:.82rem;font-weight:600;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 24px rgba(0,0,0,.25);pointer-events:none;font-family:var(--fb);border-left:4px solid var(--cr);}
+#toast.show{transform:translateX(-50%) translateY(0);}
+@media(max-width:480px){.brand-sub,.slabel{display:none;}.hbtn span{display:none;}td{padding:7px 8px;}.tda{flex-direction:column;}}
 </style>
 </head>
 <body>
 
-<!-- ══ SETUP SCREEN ══════════════════════════════════════════════════════════ -->
-<div id="setupScreen">
-  <div class="setup-card">
-    <div class="setup-logo">
-      <svg viewBox="0 0 44 44" fill="none">
-        <circle cx="22" cy="22" r="22" fill="#3A3C42"/>
-        <path d="M14 13C14 13 11 16 11 20C11 25 13.5 27.5 16 28.5C16 28.5 16 32 18.5 33H25.5C28 32 28 28.5 28 28.5C30.5 27.5 33 25 33 20C33 16 30 13 30 13C27.5 10.5 25 10.5 22 12C19 10.5 16.5 10.5 14 13Z" fill="white" opacity="0.15"/>
-        <path d="M16 14C16 14 13.5 17 13.5 20.5C13.5 24 15.5 26 17.5 27C17.5 27 17.5 30 19.5 31H24.5C26.5 30 26.5 27 26.5 27C28.5 26 30.5 24 30.5 20.5C30.5 17 28 14 28 14" stroke="#A82233" stroke-width="2" stroke-linecap="round"/>
-        <path d="M20 12.5C21 15 21 17 22 17C23 17 23 15 24 12.5" stroke="#A82233" stroke-width="1.8" stroke-linecap="round"/>
-      </svg>
-      <div class="setup-logo-text">
-        <div class="lmc">L<span>M</span>C</div>
-        <div class="sub">Clínica Dentária · Stock</div>
-      </div>
-    </div>
-    <h2>Configurar Google Sheets</h2>
-    <p>Os dados são guardados num Google Sheet — gratuito, acessível de qualquer dispositivo, partilhável com toda a equipa.</p>
-
-    <div class="setup-steps">
-      <div class="setup-step">1. Vai a <strong>sheets.google.com</strong> e cria um novo Google Sheet.</div>
-      <div class="setup-step">2. Vai a <strong>Extensões → Apps Script</strong>, apaga o código existente e cola o script gerado na aba Configuração.</div>
-      <div class="setup-step">3. Clica em <strong>Implementar → Nova implementação → Aplicação Web</strong>. Define "Quem tem acesso" como <strong>Qualquer pessoa</strong>. Copia o URL.</div>
-      <div class="setup-step">4. Cola o URL abaixo e clica em Ligar.</div>
-    </div>
-
-    <div class="setup-field">
-      <label>URL do Google Apps Script (Web App URL)</label>
-      <input type="url" id="setupUrl" placeholder="https://script.google.com/macros/s/AKf.../exec">
-      <button class="btn-setup" onclick="connectSheet()">🔗 Ligar ao Google Sheets</button>
-    </div>
-    <div class="setup-demo">
-      <a onclick="useDemoMode()">Usar modo demonstração (dados locais, sem sincronização)</a>
-    </div>
-  </div>
-</div>
-
-<!-- ══ HEADER ════════════════════════════════════════════════════════════════ -->
 <header>
-  <div class="header-brand">
-    <svg viewBox="0 0 36 36" fill="none">
-      <circle cx="18" cy="18" r="18" fill="#2A2C30"/>
-      <path d="M12 11.5C12 11.5 9.5 14 9.5 18C9.5 22.5 12 24.5 14 25.5C14 25.5 14 28 16 29H20C22 28 22 25.5 22 25.5C24 24.5 26.5 22.5 26.5 18C26.5 14 24 11.5 24 11.5" stroke="#A82233" stroke-width="2" stroke-linecap="round"/>
-      <path d="M16.5 10.5C17.2 13 17.2 14.5 18 14.5C18.8 14.5 18.8 13 19.5 10.5" stroke="#A82233" stroke-width="1.8" stroke-linecap="round"/>
+  <div class="hbrand">
+    <svg viewBox="0 0 34 34" fill="none">
+      <circle cx="17" cy="17" r="17" fill="#2A2C30"/>
+      <path d="M11 11C11 11 8.5 13.5 8.5 17.5C8.5 22 11 24 13 25C13 25 13 28 15 29H19C21 28 21 25 21 25C23 24 25.5 22 25.5 17.5C25.5 13.5 23 11 23 11" stroke="#A82233" stroke-width="2" stroke-linecap="round"/>
+      <path d="M15.5 9.5C16.2 12.2 16.2 14 17 14C17.8 14 17.8 12.2 18.5 9.5" stroke="#A82233" stroke-width="1.8" stroke-linecap="round"/>
     </svg>
-    <div class="brand-text">
+    <div>
       <div class="brand-lmc">L<span>M</span>C</div>
-      <div class="brand-sub">Clínica Dentária · Gestão de Stock</div>
+      <div class="brand-sub">Clínica Dentária</div>
     </div>
   </div>
-  <div class="header-right">
-    <div class="sync-status">
-      <div class="sync-dot" id="syncDot"></div>
-      <span id="syncLabel">Ligado</span>
-    </div>
-    <button class="hbtn" onclick="syncNow()" title="Sincronizar">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+  <div class="hright">
+    <div class="sdot" id="sdot"></div>
+    <span class="slabel" id="slabel">A ligar…</span>
+    <button class="hbtn" onclick="syncNow()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
       <span>Sync</span>
     </button>
-    <button class="hbtn crimson" onclick="openModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    <button class="hbtn cr" onclick="openModal()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       <span>Novo Material</span>
     </button>
   </div>
 </header>
 
-<!-- ══ TABS ══════════════════════════════════════════════════════════════════ -->
 <div class="tabs">
   <div class="tab active" onclick="showTab('dashboard')">📊 Dashboard</div>
   <div class="tab" onclick="showTab('stock')">📦 Stock</div>
+  <div class="tab" onclick="showTab('validade')">📅 Validades</div>
+  <div class="tab" onclick="showTab('agenda')">🗓️ Agenda</div>
+  <div class="tab" onclick="showTab('consultas')">🧾 Consultas</div>
   <div class="tab" onclick="showTab('historico')">📋 Histórico</div>
-  <div class="tab" onclick="showTab('config')">⚙️ Configuração</div>
 </div>
 
-<!-- ══ MAIN ══════════════════════════════════════════════════════════════════ -->
 <main>
-
-  <!-- ALERT BANNER - Stock baixo -->
-  <div class="alert-banner" id="alertBanner">
-    <div class="alert-banner-title">⚠️ Materiais que precisam de atenção</div>
-    <div class="alert-items-wrap" id="alertItems"></div>
-  </div>
-
-  <!-- EXPIRY BANNER - Validades -->
-  <div class="expiry-banner" id="expiryBanner">
-    <div class="alert-banner-title">🗓️ Atenção às validades</div>
-    <div class="alert-items-wrap" id="expiryItems"></div>
-  </div>
+  <div class="banner banner-stock" id="bStock"><div class="banner-title">⚠️ Materiais com stock baixo ou esgotado</div><div class="chips" id="bStockI"></div></div>
+  <div class="banner banner-expire" id="bExpire"><div class="banner-title">📅 Validades a expirar (próximos 4 meses)</div><div class="chips" id="bExpireI"></div></div>
 
   <!-- DASHBOARD -->
   <div class="section active" id="sec-dashboard">
     <div class="stats-grid" id="statsGrid"></div>
     <div class="charts-row">
-      <div class="chart-card">
-        <div class="chart-title">Quantidade vs Mínimo por Material</div>
-        <canvas id="chartBar" height="200"></canvas>
-      </div>
-      <div class="chart-card">
-        <div class="chart-title">Estado Geral</div>
-        <canvas id="chartDonut" height="200"></canvas>
-      </div>
+      <div class="chart-card"><div class="chart-title">Quantidade vs Mínimo</div><canvas id="chartBar" height="200"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Estado do Stock</div><canvas id="chartDonut" height="200"></canvas></div>
     </div>
-    <div class="chart-card">
-      <div class="chart-title">Total em Stock por Categoria</div>
-      <canvas id="chartCat" height="110"></canvas>
-    </div>
+    <div class="chart-card"><div class="chart-title">Total por Categoria</div><canvas id="chartCat" height="110"></canvas></div>
   </div>
 
   <!-- STOCK -->
   <div class="section" id="sec-stock">
     <div class="toolbar">
       <input type="text" class="inp inp-search" id="searchInp" placeholder="🔍 Pesquisar..." oninput="renderTable()">
-      <select class="inp" id="filterCat" onchange="renderTable()" style="max-width:155px">
-        <option value="">Todas as categorias</option>
+      <select class="inp" id="filterCat" onchange="renderTable()" style="max-width:150px"><option value="">Todas as categorias</option></select>
+      <select class="inp" id="filterStatus" onchange="renderTable()" style="max-width:140px">
+        <option value="">Todos</option><option value="ok">✅ Normal</option>
+        <option value="warn">⚠️ Baixo</option><option value="danger">🔴 Crítico</option>
       </select>
-      <select class="inp" id="filterStatus" onchange="renderTable()" style="max-width:145px">
+      <button class="btn btn-g" onclick="exportCSV()">📥 Exportar</button>
+      <button class="btn btn-p" onclick="openModal()">+ Adicionar</button>
+    </div>
+    <div class="tw">
+      <table><thead><tr>
+        <th>Material</th><th>Categoria</th><th>Quantidade</th>
+        <th>Mínimo</th><th>Validade</th><th>Estado</th><th>Ações</th>
+      </tr></thead><tbody id="tableBody"></tbody></table>
+    </div>
+    <div class="empty" id="emptyState" style="display:none"><div class="empty-icon">📦</div><p>Nenhum material encontrado.</p></div>
+  </div>
+
+  <!-- VALIDADES -->
+  <div class="section" id="sec-validade">
+    <div class="vcard"><h3>📅 Controlo de Validades</h3><div id="valList"></div></div>
+  </div>
+
+  <!-- AGENDA -->
+  <div class="section" id="sec-agenda">
+    <div class="agenda-grid">
+      <div class="cal-wrap">
+        <div class="cal-header">
+          <button class="cal-nav" onclick="calNav(-1)">‹</button>
+          <div class="cal-title" id="calTitle"></div>
+          <button class="cal-nav" onclick="calNav(1)">›</button>
+        </div>
+        <div class="cal-days-header">
+          <div class="cal-dh">Dom</div><div class="cal-dh">Seg</div><div class="cal-dh">Ter</div>
+          <div class="cal-dh">Qua</div><div class="cal-dh">Qui</div><div class="cal-dh">Sex</div><div class="cal-dh">Sáb</div>
+        </div>
+        <div class="cal-days" id="calDays"></div>
+      </div>
+      <div class="apt-panel">
+        <div class="apt-panel-title">
+          <span id="aptPanelTitle">Seleciona um dia</span>
+          <button class="btn btn-a btn-sm" id="btnNewApt" onclick="openAptModal()" style="display:none">+ Marcar</button>
+        </div>
+        <div id="aptList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONSULTAS (lista combinada: consultas + estado do SMS) -->
+  <div class="section" id="sec-consultas">
+    <div class="sms-summary" id="smsSummary"></div>
+    <div class="toolbar">
+      <input type="text" class="inp inp-search" id="aptSearchInp" placeholder="🔍 Pesquisar paciente..." oninput="renderConsultasList()">
+      <select class="inp" id="aptFilterEstado" onchange="renderConsultasList()" style="max-width:150px">
         <option value="">Todos os estados</option>
-        <option value="ok">✅ Normal</option>
-        <option value="warn">⚠️ Baixo</option>
-        <option value="danger">🔴 Crítico</option>
-        <option value="expiry-warn">🟣 Validade próxima</option>
-        <option value="expired">⚫ Expirado</option>
+        <option value="marcada">Marcada</option>
+        <option value="confirmada">Confirmada</option>
+        <option value="cancelada">Cancelada</option>
+        <option value="concluida">Concluída</option>
       </select>
-      <button class="btn btn-ghost" onclick="exportCSV()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar
-      </button>
-      <button class="btn btn-primary" onclick="openModal()">+ Adicionar</button>
+      <select class="inp" id="aptFilterPeriodo" onchange="renderConsultasList()" style="max-width:150px">
+        <option value="proximas">Próximas</option>
+        <option value="hoje">Hoje</option>
+        <option value="amanha">Amanhã</option>
+        <option value="semana">Esta Semana</option>
+        <option value="todas">Todas</option>
+        <option value="passadas">Já Passadas</option>
+      </select>
+      <select class="inp" id="aptFilterSms" onchange="renderConsultasList()" style="max-width:150px">
+        <option value="">SMS: todos</option>
+        <option value="enviado">✅ Enviado</option>
+        <option value="pendente">⏳ Pendente</option>
+        <option value="falhado">❌ Falhado</option>
+        <option value="na">— Sem SMS</option>
+      </select>
+      <button class="btn btn-a" onclick="openAptModal()">+ Marcar Consulta</button>
     </div>
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Material</th>
-            <th>Categoria</th>
-            <th>Quantidade</th>
-            <th>Mínimo</th>
-            <th>Validade</th>
-            <th>Estado</th>
-            <th>Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
+    <div class="tw">
+      <table><thead><tr>
+        <th>Data</th><th>Hora</th><th>Paciente</th><th>Contacto</th>
+        <th>Tipo</th><th>Médico</th><th>Estado</th><th>SMS</th><th>Ações</th>
+      </tr></thead><tbody id="consultasTableBody"></tbody></table>
     </div>
-    <div class="empty" id="emptyState" style="display:none">
-      <div class="empty-icon">📦</div>
-      <p>Nenhum material encontrado.<br>Adiciona o primeiro!</p>
-    </div>
+    <div class="empty" id="emptyConsultas" style="display:none"><div class="empty-icon">🧾</div><p>Nenhuma consulta encontrada.</p></div>
   </div>
 
   <!-- HISTORICO -->
   <div class="section" id="sec-historico">
-    <div class="hist-card">
-      <div class="hist-header">
-        <h3>Movimentos de Stock</h3>
-        <button class="btn btn-sm btn-del" onclick="clearHist()">Limpar histórico</button>
-      </div>
+    <div class="hcard">
+      <div class="hhead"><h3>Movimentos de Stock</h3><button class="btn btn-sm btn-del" onclick="clearHist()">Limpar</button></div>
       <div id="histList"></div>
+    </div>
+    <div class="hcard" style="margin-top:14px">
+      <div class="hhead"><h3>ℹ️ Configuração da App (Google Sheets · Email · SMS)</h3></div>
+      <p style="font-size:.80rem;color:var(--mu);line-height:1.6;margin-bottom:10px">
+        Esta app está ligada a um Google Sheet e envia <strong>2 emails diferentes</strong> automaticamente:
+      </p>
+      <ul style="font-size:.80rem;color:var(--ch);line-height:1.7;padding-left:20px;margin-bottom:10px">
+        <li><strong>📦 Email de Alertas de Stock</strong> — esgotados, stock baixo, validades expiradas e a expirar (4 meses).</li>
+        <li><strong>🗓️ Email de Consultas do Dia Seguinte</strong> — lista das consultas marcadas para amanhã, enviado separadamente.</li>
+        <li><strong>📱 SMS aos Pacientes (via MacroDroid)</strong> — o telemóvel da clínica lê os SMS pendentes e envia automaticamente um dia antes da consulta.</li>
+      </ul>
+      <p style="font-size:.80rem;color:var(--mu);line-height:1.6;margin-bottom:10px">
+        O estado de cada SMS (✅ Enviado / ⏳ Pendente / ❌ Falhado / — Sem SMS) aparece junto de cada consulta no
+        separador <strong>🧾 Consultas</strong>, incluindo um resumo no topo, para validares visualmente se tudo saiu
+        sem teres de abrir a Google Sheet.
+      </p>
+      <p style="font-size:.78rem;color:var(--mu);line-height:1.6">
+        Para configurar o URL do Google Sheets, o email de destino e o texto do SMS, edita o ficheiro HTML diretamente — os campos
+        <code>FIXED_API_URL</code>, <code>ALERT_EMAIL_HTML</code> e <code>SMS_TEMPLATE</code> estão bem identificados no topo do script.
+        Os emails são enviados para os endereços <code>ALERT_EMAIL_STOCK</code> e <code>ALERT_EMAIL_CONSULTAS</code>, configurados
+        diretamente no ficheiro <code>LMC-AppsScript.gs</code> (podem ser iguais ou diferentes). O código completo para o Google
+        Apps Script (incluindo os 2 emails e o endpoint para o MacroDroid) está no ficheiro
+        <code>LMC-AppsScript.gs</code> fornecido junto com esta app.
+      </p>
     </div>
   </div>
 
   <!-- CONFIG -->
-  <div class="section" id="sec-config">
-    <div class="config-panel">
-      <h3>⚙️ Ligação ao Google Sheets</h3>
-      <p>Altera o URL do Google Apps Script ou reconecta a uma folha diferente.</p>
-      <div class="fg">
-        <label>URL do Google Apps Script</label>
-        <input type="url" id="configUrl" placeholder="https://script.google.com/macros/s/...">
-        <div class="fg-hint">Este URL fica guardado no browser. Cola aqui uma vez e não precisas repetir.</div>
-      </div>
-      <button class="btn btn-primary" onclick="saveConfig()">Guardar e Reconectar</button>
-    </div>
 
-    <div class="config-panel">
-      <h3>📧 Alertas por Email</h3>
-      <p>O email de alerta é enviado pelo próprio Google Apps Script quando detetam validades próximas ou stock crítico. Não precisas de serviço externo.</p>
-      <div class="fg">
-        <label>Email para receber alertas</label>
-        <input type="email" id="configEmail" placeholder="exemplo@gmail.com">
-        <div class="fg-hint">Guarda este email e usa-o no campo ALERT_EMAIL do script abaixo.</div>
-      </div>
-      <button class="btn btn-ghost" onclick="saveEmailConfig()">💾 Guardar Email</button>
-      <button class="btn btn-primary" style="margin-left:8px" onclick="sendTestAlert()">📤 Testar Alertas Agora</button>
+<!-- MODAL STOCK -->
+<div class="mbg" id="modalBg" onclick="closeBg(event,'modalBg')">
+  <div class="modal">
+    <div class="mh"><h2 id="modalTitle">Novo Material</h2><button class="mcls" onclick="closeModal()">✕</button></div>
+    <div class="sdiv">Informação Geral</div>
+    <div class="fg"><label>Nome do Material *</label><input type="text" id="fNome" placeholder="Ex: Lidocaína 2% c/ Epinefrina"></div>
+    <div class="fg"><label>Categoria</label>
+      <select id="fCat"><option>Consumíveis</option><option>Instrumentos</option><option>Anestesia</option>
+      <option>Higiene</option><option>Radiologia</option><option>Proteção Individual</option>
+      <option>Materiais de Restauração</option><option>Esterilização</option><option>Outros</option></select>
     </div>
-
-    <div class="config-panel">
-      <h3>📋 Script do Google Apps Script</h3>
-      <p>Copia o código abaixo e cola em <strong>Extensões → Apps Script</strong> no teu Google Sheet. Substitui o teu email em <code>ALERT_EMAIL</code>.</p>
-      <div style="background:var(--charcoal-d);border-radius:10px;padding:16px;margin-top:10px;overflow-x:auto">
-        <pre id="scriptCode" style="color:#6FCF97;font-size:0.72rem;line-height:1.6;white-space:pre-wrap;font-family:monospace"></pre>
-      </div>
-      <button class="btn btn-ghost" style="margin-top:10px;width:100%" onclick="copyScript()">📋 Copiar Script</button>
+    <div class="fgr">
+      <div class="fg"><label>Quantidade *</label><input type="number" id="fQty" min="0" placeholder="0"></div>
+      <div class="fg"><label>Stock Mínimo *</label><input type="number" id="fMin" min="0" placeholder="5"></div>
+    </div>
+    <div class="fgr">
+      <div class="fg"><label>Unidade</label><input type="text" id="fUnit" placeholder="unid, cx, ml..."></div>
+      <div class="fg"><label>Fornecedor</label><input type="text" id="fForn" placeholder="Opcional"></div>
+    </div>
+    <div class="sdiv">📅 Validade (opcional)</div>
+    <div class="fgr">
+      <div class="fg"><label>Data de Validade</label><input type="date" id="fValidade"></div>
+      <div class="fg"><label>Lote / Referência</label><input type="text" id="fLote" placeholder="Ex: LOT2024A"></div>
+    </div>
+    <div class="fg"><label>Notas</label><input type="text" id="fNotes" placeholder="Observações sobre o produto"></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-p" onclick="saveMat()">Guardar</button>
     </div>
   </div>
+</div>
 
-</main>
-
-<!-- ══ MODAL ADD/EDIT ════════════════════════════════════════════════════════ -->
-<div class="modal-bg" id="modalBg" onclick="closeBg(event,'modalBg')">
+<!-- MODAL ENTRADA -->
+<div class="mbg" id="entradaBg" onclick="closeBg(event,'entradaBg')">
   <div class="modal">
-    <div class="modal-header">
-      <h2 id="modalTitle">Novo Material</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="mh"><h2>📥 Entrada de Stock</h2><button class="mcls" onclick="closeEntrada()">✕</button></div>
+    <p id="entradaInfo" style="font-size:.82rem;color:var(--mu);margin-bottom:16px;padding:10px;background:var(--off);border-radius:8px"></p>
+    <div class="fg"><label>Quantidade a Adicionar</label><input type="number" id="entQty" min="1" value="1"></div>
+    <div class="fg"><label>Atualizar Data de Validade (opcional)</label><input type="date" id="entVal"></div>
+    <div class="fg"><label>Atualizar Lote (opcional)</label><input type="text" id="entLote" placeholder="Novo número de lote"></div>
+    <div class="fg"><label>Observação</label><input type="text" id="entNota" placeholder="Ex: Encomenda recebida — Septodont"></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeEntrada()">Cancelar</button>
+      <button class="btn btn-p" onclick="confirmEntrada()">✅ Confirmar</button>
     </div>
-    <div class="fg">
-      <label>Nome do Material *</label>
-      <input type="text" id="fNome" placeholder="Ex: Luvas de Nitrilo M">
+  </div>
+</div>
+
+<!-- MODAL CONSULTA -->
+<div class="mbg" id="aptBg" onclick="closeBg(event,'aptBg')">
+  <div class="modal">
+    <div class="mh"><h2 id="aptModalTitle">Nova Consulta</h2><button class="mcls" onclick="closeAptModal()">✕</button></div>
+    <div class="fgr">
+      <div class="fg"><label>Data *</label><input type="date" id="aptData"></div>
+      <div class="fg"><label>Hora *</label><input type="time" id="aptHora" value="09:00"></div>
     </div>
-    <div class="fg">
-      <label>Categoria</label>
-      <select id="fCat">
-        <option>Consumíveis</option>
-        <option>Instrumentos</option>
-        <option>Anestesia</option>
-        <option>Higiene</option>
-        <option>Radiologia</option>
-        <option>Proteção Individual</option>
-        <option>Materiais de Restauração</option>
-        <option>Esterilização</option>
-        <option>Outros</option>
+    <div class="fg"><label>Nome do Paciente *</label><input type="text" id="aptPaciente" placeholder="Nome completo"></div>
+    <div class="fg"><label>Telefone</label><input type="tel" id="aptTel" placeholder="9XX XXX XXX"></div>
+    <div class="fgr">
+      <div class="fg"><label>Tipo de Consulta</label>
+        <select id="aptTipo">
+          <option>Consulta de Rotina</option><option>Destartarização</option>
+          <option>Restauração / Cárie</option><option>Extração</option>
+          <option>Endodontia (Canal)</option><option>Ortodontia</option>
+          <option>Implante</option><option>Branqueamento</option>
+          <option>Urgência</option><option>Outro</option>
+        </select>
+      </div>
+      <div class="fg"><label>Duração</label>
+        <select id="aptDur">
+          <option value="30">30 min</option><option value="45">45 min</option>
+          <option value="60" selected>1 hora</option><option value="90">1h 30min</option>
+          <option value="120">2 horas</option>
+        </select>
+      </div>
+    </div>
+    <div class="fg"><label>Médico / Dentista</label><input type="text" id="aptMedico" placeholder="Nome do profissional"></div>
+    <div class="fg"><label>Estado</label>
+      <select id="aptEstado">
+        <option value="marcada">Marcada</option><option value="confirmada">Confirmada</option>
+        <option value="cancelada">Cancelada</option><option value="concluida">Concluída</option>
       </select>
     </div>
-    <div class="fg-row">
-      <div class="fg">
-        <label>Quantidade *</label>
-        <input type="number" id="fQty" min="0" placeholder="0">
-      </div>
-      <div class="fg">
-        <label>Stock Mínimo *</label>
-        <input type="number" id="fMin" min="0" placeholder="5">
-      </div>
-    </div>
-    <div class="fg-row">
-      <div class="fg">
-        <label>Unidade</label>
-        <input type="text" id="fUnit" placeholder="unid, cx, ml...">
-      </div>
-      <div class="fg">
-        <label>Fornecedor</label>
-        <input type="text" id="fForn" placeholder="Opcional">
-      </div>
-    </div>
-    <div class="fg">
-      <label>📅 Data de Validade</label>
-      <input type="month" id="fValidade" placeholder="AAAA-MM">
-      <div class="fg-hint">Deixa em branco se não aplicável. Recebes alerta 4 meses antes.</div>
-    </div>
-    <div class="fg">
-      <label>Referência / Notas</label>
-      <input type="text" id="fNotes" placeholder="Ref. do produto, etc.">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveMat()">Guardar</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL ENTRADA ═════════════════════════════════════════════════════════ -->
-<div class="modal-bg" id="entradaBg" onclick="closeBg(event,'entradaBg')">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>📥 Entrada de Stock</h2>
-      <button class="modal-close" onclick="closeEntrada()">✕</button>
-    </div>
-    <p id="entradaInfo" style="font-size:0.84rem;color:var(--muted);margin-bottom:18px"></p>
-    <div class="fg">
-      <label>Quantidade a Adicionar</label>
-      <input type="number" id="entradaQty" min="1" value="1">
-    </div>
-    <div class="fg">
-      <label>📅 Nova Data de Validade (opcional)</label>
-      <input type="month" id="entradaValidade">
-      <div class="fg-hint">Preenche se o novo lote tiver validade diferente.</div>
-    </div>
-    <div class="fg">
-      <label>Observação</label>
-      <input type="text" id="entradaNota" placeholder="Ex: Encomenda recebida de Septodont">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeEntrada()">Cancelar</button>
-      <button class="btn btn-primary" onclick="confirmEntrada()">✅ Confirmar Entrada</button>
-    </div>
-  </div>
-</div>
-
-<!-- ══ MODAL SAÍDA ════════════════════════════════════════════════════════════ -->
-<div class="modal-bg" id="saidaBg" onclick="closeBg(event,'saidaBg')">
-  <div class="modal saida-modal">
-    <div class="modal-header">
-      <h2>📤 Retirar do Armário</h2>
-      <button class="modal-close" onclick="closeSaida()">✕</button>
-    </div>
-    <div class="saida-info" id="saidaInfo"></div>
-    <div class="fg" style="text-align:center">
-      <label>Quantidade a retirar</label>
-      <input type="number" class="saida-num" id="saidaQty" min="1" value="1">
-    </div>
-    <div class="fg">
-      <label>Motivo (opcional)</label>
-      <input type="text" id="saidaNota" placeholder="Ex: Consulta Dr. Silva, urgência...">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeSaida()">Cancelar</button>
-      <button class="btn btn-saida" onclick="confirmSaida()">📤 Confirmar Saída</button>
+    <div class="fg"><label>Observações</label><textarea id="aptNotes" placeholder="Notas sobre a consulta..."></textarea></div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeAptModal()">Cancelar</button>
+      <button class="btn btn-a" onclick="saveApt()">Guardar Consulta</button>
     </div>
   </div>
 </div>
@@ -629,850 +500,471 @@
 <div id="toast"></div>
 
 <script>
-// ══ APPS SCRIPT CODE ══════════════════════════════════════════════════════════
-const APPS_SCRIPT = `// ════════════════════════════════════════════════════
-// LMC · Gestão de Stock — Google Apps Script
-// Cola este código em Extensões → Apps Script
-// ════════════════════════════════════════════════════
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║          LMC - CLÍNICA DENTÁRIA · CONFIGURAÇÃO                  ║
+// ║  Preenche estes campos antes de publicar no GitHub               ║
+// ╠══════════════════════════════════════════════════════════════════╣
+// ║  1. URL do Google Apps Script                                    ║
+// ║     → Cola o URL que obteste ao implementar o Apps Script        ║
+const FIXED_API_URL = 'https://script.google.com/macros/s/AKfycby-uhr5uxV7RI42B5x9XmVbLcZI-8-ANZRuwLnz9gfrxOYXSPv4AscGI789-qK0afNU/exec';
+// ║                                                                  ║
+// ║  2. Email para receber alertas de STOCK (esgotados/validades)    ║
+// ║     → Substitui pelo email real da clínica                       ║
+const ALERT_EMAIL_HTML = 'lmc.clinicadentaria@gmail.com';
+// ║                                                                  ║
+// ║  3. Texto do SMS enviado ao paciente no dia anterior              ║
+// ║     → Usa {nome}, {hora}, {tipo}, {medico} como variáveis        ║
+// ║     → Este texto é só informativo aqui; o envio real é feito     ║
+// ║       pelo MacroDroid no telemóvel da clínica (ver instruções    ║
+// ║       no separador Histórico / documentação entregue)            ║
+const SMS_TEMPLATE = 'Ola {nome}! Lembrete LMC Clinica Dentaria: tem consulta amanha as {hora} ({tipo}). Para remarcar contacte-nos. Obrigado!';
+// ╚══════════════════════════════════════════════════════════════════╝
 
-const SHEET_NAME  = 'Stock';
-const HIST_SHEET  = 'Historico';
-const ALERT_EMAIL = 'O_TEU_EMAIL@gmail.com'; // ← Muda para o teu email!
-const MONTHS_WARN = 4; // Alerta X meses antes da validade
 
-// ── Trigger automático (corre todos os dias) ──────────────────────────────
-// Para ativar: Extensões → Apps Script → Gatilhos → + Adicionar gatilho
-// Função: checkExpiryAndStock | Evento: Baseado no tempo | Diário
-function checkExpiryAndStock() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) return;
-
-  const rows = sh.getDataRange().getValues();
-  const headers = rows[0];
-  const today = new Date();
-  const warnDate = new Date(today);
-  warnDate.setMonth(warnDate.getMonth() + MONTHS_WARN);
-
-  const expiring = [];
-  const expired  = [];
-  const lowStock = [];
-
-  rows.slice(1).forEach(r => {
-    const obj = {};
-    headers.forEach((h,i) => obj[h] = r[i]);
-
-    // Verifica validade
-    if (obj.validade) {
-      const exp = new Date(obj.validade + '-28'); // último dia aproximado do mês
-      if (exp < today) {
-        expired.push(\`\${obj.nome} — EXPIRADO em \${obj.validade}\`);
-      } else if (exp <= warnDate) {
-        const diffDays = Math.ceil((exp - today) / (1000*60*60*24));
-        expiring.push(\`\${obj.nome} — expira em \${obj.validade} (\${diffDays} dias)\`);
-      }
-    }
-
-    // Verifica stock baixo
-    const qty = parseFloat(obj.qty) || 0;
-    const min = parseFloat(obj.min) || 0;
-    if (qty === 0) {
-      lowStock.push(\`\${obj.nome} — ESGOTADO\`);
-    } else if (qty <= min) {
-      lowStock.push(\`\${obj.nome} — Qty: \${qty} / Mínimo: \${min} \${obj.unit||''}\`);
-    }
-  });
-
-  if (!expiring.length && !expired.length && !lowStock.length) return;
-
-  let body = '🏥 LMC Clínica Dentária — Relatório de Stock\\n';
-  body += '═══════════════════════════════════\\n\\n';
-
-  if (expired.length) {
-    body += '🔴 PRODUTOS EXPIRADOS:\\n';
-    expired.forEach(l => body += '  • ' + l + '\\n');
-    body += '\\n';
-  }
-  if (expiring.length) {
-    body += '🟡 VALIDADES PRÓXIMAS (< ' + MONTHS_WARN + ' meses):\\n';
-    expiring.forEach(l => body += '  • ' + l + '\\n');
-    body += '\\n';
-  }
-  if (lowStock.length) {
-    body += '⚠️ STOCK BAIXO / ESGOTADO:\\n';
-    lowStock.forEach(l => body += '  • ' + l + '\\n');
-    body += '\\n';
-  }
-
-  body += '─────────────────────────────\\n';
-  body += 'Enviado automaticamente pelo sistema LMC.';
-
-  MailApp.sendEmail({
-    to: ALERT_EMAIL,
-    subject: '⚠️ LMC Stock — ' + (expired.length ? expired.length + ' expirados, ' : '') +
-             (expiring.length ? expiring.length + ' a expirar, ' : '') +
-             (lowStock.length ? lowStock.length + ' stock baixo' : ''),
-    body: body
-  });
-}
-
-// ── HTTP handlers ─────────────────────────────────────────────────────────
-function doGet(e) {
-  const action = e.parameter.action || 'getAll';
-  if (action === 'getAll')    return getAll();
-  if (action === 'getHist')   return getHist();
-  if (action === 'sendAlert') return sendAlertNow();
-  return resp({error:'unknown action'});
-}
-
-function doPost(e) {
-  const data = JSON.parse(e.postData.contents);
-  const action = data.action;
-  if (action === 'add')       return addRow(data);
-  if (action === 'update')    return updateRow(data);
-  if (action === 'delete')    return deleteRow(data);
-  if (action === 'addHist')   return addHist(data);
-  if (action === 'clearHist') return clearHist();
-  return resp({error:'unknown action'});
-}
-
-function sendAlertNow() {
-  try { checkExpiryAndStock(); return resp({ok:true}); }
-  catch(e) { return resp({error: e.message}); }
-}
-
-function getAll() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) {
-    sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(['id','nome','cat','qty','min','unit','fornecedor','validade','notes','criado']);
-  }
-  const rows = sh.getDataRange().getValues();
-  const headers = rows[0];
-  const items = rows.slice(1).map(r => {
-    const obj = {}; headers.forEach((h,i) => obj[h]=r[i]); return obj;
-  });
-  return resp({items});
-}
-
-function getHist() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(HIST_SHEET);
-  if (!sh) return resp({hist:[]});
-  const rows = sh.getDataRange().getValues();
-  if (rows.length < 2) return resp({hist:[]});
-  const headers = rows[0];
-  const hist = rows.slice(1).reverse().map(r => {
-    const obj = {}; headers.forEach((h,i) => obj[h]=r[i]); return obj;
-  });
-  return resp({hist});
-}
-
-function addRow(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) {
-    sh = ss.insertSheet(SHEET_NAME);
-    sh.appendRow(['id','nome','cat','qty','min','unit','fornecedor','validade','notes','criado']);
-  }
-  const id = Utilities.getUuid();
-  sh.appendRow([id, data.nome, data.cat, data.qty, data.min, data.unit||'', data.fornecedor||'', data.validade||'', data.notes||'', new Date().toISOString()]);
-  return resp({ok:true, id});
-}
-
-function updateRow(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) return resp({error:'no sheet'});
-  const rows = sh.getDataRange().getValues();
-  for (let i=1;i<rows.length;i++) {
-    if (rows[i][0] == data.id) {
-      sh.getRange(i+1,2).setValue(data.nome);
-      sh.getRange(i+1,3).setValue(data.cat);
-      sh.getRange(i+1,4).setValue(data.qty);
-      sh.getRange(i+1,5).setValue(data.min);
-      sh.getRange(i+1,6).setValue(data.unit||'');
-      sh.getRange(i+1,7).setValue(data.fornecedor||'');
-      sh.getRange(i+1,8).setValue(data.validade||'');
-      sh.getRange(i+1,9).setValue(data.notes||'');
-      return resp({ok:true});
-    }
-  }
-  return resp({error:'not found'});
-}
-
-function deleteRow(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sh = ss.getSheetByName(SHEET_NAME);
-  if (!sh) return resp({error:'no sheet'});
-  const rows = sh.getDataRange().getValues();
-  for (let i=1;i<rows.length;i++) {
-    if (rows[i][0] == data.id) { sh.deleteRow(i+1); return resp({ok:true}); }
-  }
-  return resp({error:'not found'});
-}
-
-function addHist(data) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(HIST_SHEET);
-  if (!sh) { sh = ss.insertSheet(HIST_SHEET); sh.appendRow(['type','nome','detail','ts']); }
-  sh.appendRow([data.type, data.nome, data.detail, new Date().toISOString()]);
-  return resp({ok:true});
-}
-
-function clearHist() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sh = ss.getSheetByName(HIST_SHEET);
-  if (!sh) return resp({ok:true});
-  const lastRow = sh.getLastRow();
-  if (lastRow > 1) sh.deleteRows(2, lastRow-1);
-  return resp({ok:true});
-}
-
-function resp(obj) {
-  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
-}`;
-
-document.getElementById('scriptCode').textContent = APPS_SCRIPT;
-
-// ══ STATE ════════════════════════════════════════════════════════════════════
-const LKEY   = 'lmc_url';
-const LDATA  = 'lmc_data';
-const LHIST  = 'lmc_hist';
-const LDEMO  = 'lmc_demo';
-const LEMAIL = 'lmc_email';
-
-let apiUrl     = localStorage.getItem(LKEY) || '';
-let isDemoMode = localStorage.getItem(LDEMO) === '1';
-let data       = [];
-let hist       = [];
-let editId     = null;
-let entradaId  = null;
-let saidaId    = null;
+// ══ STATE ════════════════════════════════════════════════════════
+const LKEY='lmc_url3'; const LDATA='lmc_d3'; const LHIST='lmc_h3'; const LAPTS='lmc_a3'; const LSMS='lmc_s3';
+let apiUrl = FIXED_API_URL || localStorage.getItem(LKEY) || '';
+let data=[], hist=[], apts=[], sms=[];
+let editId=null, entId=null, aptEditId=null;
 let chartBar, chartDonut, chartCat;
+let calYear, calMonth, calSelected=null;
 
-// ══ INIT ═════════════════════════════════════════════════════════════════════
-(async function init() {
-  // Restaurar email guardado
-  const savedEmail = localStorage.getItem(LEMAIL);
-  if (savedEmail) document.getElementById('configEmail').value = savedEmail;
+(function(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();})();
 
-  if (isDemoMode) { loadDemo(); hideSetup(); renderAll(); return; }
-  if (apiUrl) {
-    document.getElementById('configUrl').value = apiUrl;
-    hideSetup();
-    await syncNow();
-  } else {
-    showSetup();
-  }
+// ══ INIT ═════════════════════════════════════════════════════════
+(async function init(){
+  const cfgEl=document.getElementById('configUrl'); if(apiUrl&&cfgEl){cfgEl.value=apiUrl;}
+  const cd=localStorage.getItem(LDATA); if(cd)data=JSON.parse(cd);
+  const ch=localStorage.getItem(LHIST); if(ch)hist=JSON.parse(ch);
+  const ca=localStorage.getItem(LAPTS); if(ca)apts=JSON.parse(ca);
+  const cs=localStorage.getItem(LSMS); if(cs)sms=JSON.parse(cs);
+  renderAll();
+  if(apiUrl){await syncNow();}
+  else{setSS('error','Sem ligação');toast('⚠️ Define o URL em FIXED_API_URL no topo do HTML');}
 })();
 
-function showSetup() { document.getElementById('setupScreen').classList.remove('hidden'); }
-function hideSetup() { document.getElementById('setupScreen').classList.add('hidden'); }
-
-// ══ SETUP ════════════════════════════════════════════════════════════════════
-async function connectSheet() {
-  const url = document.getElementById('setupUrl').value.trim();
-  if (!url || !url.startsWith('https://script.google.com')) {
-    alert('Introduz um URL válido do Google Apps Script.'); return;
-  }
-  setSyncState('syncing', 'A ligar…');
-  try {
-    const res = await fetch(url + '?action=getAll');
-    const json = await res.json();
-    if (json.items !== undefined) {
-      apiUrl = url;
-      localStorage.setItem(LKEY, url);
-      document.getElementById('configUrl').value = url;
-      data = json.items.map(normalise);
-      saveLocal();
-      hideSetup();
-      await loadHistFromSheet();
-      renderAll();
-      setSyncState('ok', 'Ligado');
-      toast('✅ Ligado ao Google Sheets!');
-    } else { throw new Error('resposta inválida'); }
-  } catch(e) {
-    setSyncState('error', 'Erro');
-    alert('Não foi possível ligar. Verifica o URL e as permissões do Apps Script.\n\n' + e.message);
-  }
-}
-
-function useDemoMode() {
-  isDemoMode = true;
-  localStorage.setItem(LDEMO, '1');
-  loadDemo();
-  hideSetup();
-  renderAll();
-  toast('Modo demonstração ativo (dados locais)');
-}
-
-function loadDemo() {
-  const saved = localStorage.getItem(LDATA);
-  if (saved) { data = JSON.parse(saved); return; }
-  const today = new Date();
-  const m2 = new Date(today); m2.setMonth(m2.getMonth()+2);
-  const m3 = new Date(today); m3.setMonth(m3.getMonth()+3);
-  const m8 = new Date(today); m8.setMonth(m8.getMonth()+8);
-  const mp1 = new Date(today); mp1.setMonth(mp1.getMonth()-1);
-  const fmt = d => d.toISOString().slice(0,7);
-
-  data = [
-    { id:'d1', nome:'Luvas Nitrilo M',              cat:'Proteção Individual',       qty:3,  min:10, unit:'cx',   fornecedor:'Medline',   validade:'',     notes:'' },
-    { id:'d2', nome:'Máscaras Cirúrgicas',           cat:'Proteção Individual',       qty:25, min:10, unit:'unid', fornecedor:'',          validade:'',     notes:'' },
-    { id:'d3', nome:'Lidocaína 2% c/ Epinefrina',   cat:'Anestesia',                 qty:8,  min:5,  unit:'cx',   fornecedor:'Septodont', validade:fmt(m2), notes:'Ref. 3001380' },
-    { id:'d4', nome:'Articaína 4% c/ Epinefrina',   cat:'Anestesia',                 qty:4,  min:5,  unit:'cx',   fornecedor:'Septodont', validade:fmt(m3), notes:'' },
-    { id:'d5', nome:'Mepivacaína 3%',               cat:'Anestesia',                 qty:2,  min:3,  unit:'cx',   fornecedor:'Septodont', validade:fmt(mp1)+'', notes:'⚠️ Verificar' },
-    { id:'d6', nome:'Algodão em Rolo',               cat:'Consumíveis',               qty:15, min:5,  unit:'unid', fornecedor:'',          validade:'',     notes:'' },
-    { id:'d7', nome:'Ácido Fosfórico 37%',           cat:'Materiais de Restauração',  qty:0,  min:3,  unit:'unid', fornecedor:'',          validade:fmt(m8), notes:'' },
-    { id:'d8', nome:'Radiografias Periapicais',      cat:'Radiologia',                qty:8,  min:5,  unit:'cx',   fornecedor:'',          validade:'',     notes:'' },
-    { id:'d9', nome:'Brocas Diamante Troncocónica',  cat:'Instrumentos',              qty:4,  min:6,  unit:'unid', fornecedor:'',          validade:'',     notes:'' },
-  ];
-  saveLocal();
-}
-
-// ══ SYNC ═════════════════════════════════════════════════════════════════════
-async function syncNow() {
-  if (isDemoMode) { renderAll(); toast('Modo demo — sem sincronização'); return; }
-  if (!apiUrl) return;
-  setSyncState('syncing', 'A sincronizar…');
-  try {
-    const [dRes, hRes] = await Promise.all([
-      fetch(apiUrl + '?action=getAll'),
-      fetch(apiUrl + '?action=getHist')
+// ══ SYNC ═════════════════════════════════════════════════════════
+async function syncNow(){
+  if(!apiUrl){toast('URL não configurado');return;}
+  setSS('syncing','A sincronizar…');
+  try{
+    const [dr,hr,ar,sr]=await Promise.all([
+      fetch(apiUrl+'?action=getAll').then(r=>r.json()),
+      fetch(apiUrl+'?action=getHist').then(r=>r.json()),
+      fetch(apiUrl+'?action=getApts').then(r=>r.json()),
+      fetch(apiUrl+'?action=getSmsTodos').then(r=>r.json())
     ]);
-    const dJson = await dRes.json();
-    const hJson = await hRes.json();
-    data = (dJson.items || []).map(normalise);
-    hist = (hJson.hist || []);
-    saveLocal();
-    renderAll();
-    setSyncState('ok', 'Sincronizado');
-    toast('✅ Dados atualizados');
-  } catch(e) {
-    setSyncState('error', 'Sem ligação');
-    const ld = localStorage.getItem(LDATA);
-    if (ld) data = JSON.parse(ld);
-    renderAll();
-    toast('⚠️ Sem ligação — a usar dados locais');
+    data=(dr.items||[]).map(norm); hist=hr.hist||[]; apts=ar.apts||[]; sms=sr.sms||[];
+    saveLocal(); renderAll(); setSS('ok','Sincronizado');
+  }catch(e){
+    setSS('error','Sem ligação'); saveLocal(); renderAll(); toast('⚠️ Sem ligação — dados locais');
   }
 }
+function setSS(s,l){const d=document.getElementById('sdot'),lb=document.getElementById('slabel');d.className='sdot'+(s!=='ok'?' '+s:'');lb.textContent=l;}
+async function apiPost(b){if(!apiUrl)return{ok:true};try{return(await fetch(apiUrl,{method:'POST',body:JSON.stringify(b)})).json();}catch{return{ok:true};}}
+function saveLocal(){localStorage.setItem(LDATA,JSON.stringify(data));localStorage.setItem(LHIST,JSON.stringify(hist));localStorage.setItem(LAPTS,JSON.stringify(apts));localStorage.setItem(LSMS,JSON.stringify(sms));}
 
-async function loadHistFromSheet() {
-  if (isDemoMode || !apiUrl) return;
-  try {
-    const res = await fetch(apiUrl + '?action=getHist');
-    const j = await res.json();
-    hist = j.hist || [];
-  } catch {}
+// ══ HELPERS ══════════════════════════════════════════════════════
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function norm(i){return{id:i.id||uid(),nome:i.nome||'',cat:i.cat||'Outros',qty:+i.qty||0,min:+i.min||0,unit:i.unit||'unid',fornecedor:i.fornecedor||'',notes:i.notes||'',validade:i.validade?String(i.validade).slice(0,10):'',lote:i.lote||''};}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function stk(i){if(i.qty===0)return'danger';if(i.qty<=i.min)return'warn';return'ok';}
+function fmtD(d){if(!d)return'';try{const p=d.slice?d.slice(0,10):d;const[y,m,dd]=p.split('-');return dd+'/'+m+'/'+y;}catch{return d;}}
+function expSt(v){
+  if(!v)return null;
+  const t=new Date();t.setHours(0,0,0,0);
+  const vd=new Date(v);vd.setHours(0,0,0,0);
+  const diff=Math.ceil((vd-t)/86400000);
+  if(diff<0)return{s:'danger',days:diff,label:'Expirado há '+Math.abs(diff)+' dia'+(Math.abs(diff)>1?'s':'')};
+  if(diff===0)return{s:'danger',days:0,label:'Expira HOJE!'};
+  if(diff<=120)return{s:'warn',days:diff,label:'Expira em '+diff+' dias ('+fmtD(v)+')'};
+  return{s:'ok',days:diff,label:fmtD(v)};
+}
+function pushHist(type,nome,detail){const e={type,nome,detail,ts:new Date().toISOString()};hist.unshift(e);if(hist.length>300)hist.length=300;saveLocal();apiPost({action:'addHist',...e});}
+
+// ══ SMS (estado por consulta — lista combinada no separador Consultas) ══
+function fmtDT(iso){if(!iso)return'';try{const d=new Date(iso);if(isNaN(d))return'';return d.toLocaleDateString('pt-PT')+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});}catch{return'';}}
+function smsRecFor(aptId){return sms.find(s=>String(s.id)==='sms-'+aptId);}
+// devolve 'enviado'|'pendente'|'falhado'|'na' — usado para filtrar e para o resumo
+function smsEstadoFor(a){
+  if(!a.tel)return'na';
+  const rec=smsRecFor(a.id);
+  if(!rec)return'na';
+  const e=String(rec.estado||'pendente');
+  return(e==='enviado'||e==='falhado')?e:'pendente';
+}
+function smsBadge(a){
+  if(!a.tel)return'<span class="sms-tag sms-na" title="Sem número de telefone registado">— sem nº</span>';
+  const rec=smsRecFor(a.id);
+  if(!rec)return'<span class="sms-tag sms-na" title="O SMS só é gerado no dia anterior à consulta">—</span>';
+  const e=String(rec.estado||'pendente');
+  if(e==='enviado'){const dt=fmtDT(rec.enviado_em);return`<span class="sms-tag sms-ok" title="Enviado${dt?' em '+dt:''}">✅ Enviado</span>`;}
+  if(e==='falhado')return'<span class="sms-tag sms-fail" title="O envio falhou — confirma o MacroDroid no telemóvel da clínica">❌ Falhado</span>';
+  return'<span class="sms-tag sms-pend" title="Em fila de espera para o MacroDroid enviar">⏳ Pendente</span>';
+}
+// resumo rápido no topo do separador Consultas — para validar visualmente se saiu tudo
+function renderSmsSummary(){
+  const el=document.getElementById('smsSummary'); if(!el)return;
+  if(!sms.length){el.innerHTML='<span class="sms-sum-item sms-sum-na">📱 Ainda sem SMS gerados (gera-se automaticamente no dia anterior à consulta)</span>';return;}
+  const ok=sms.filter(s=>s.estado==='enviado').length;
+  const fail=sms.filter(s=>s.estado==='falhado').length;
+  const pend=sms.length-ok-fail;
+  el.innerHTML=`
+    <span class="sms-sum-item sms-sum-ok">✅ ${ok} enviado${ok!==1?'s':''}</span>
+    <span class="sms-sum-item sms-sum-pend">⏳ ${pend} pendente${pend!==1?'s':''}</span>
+    <span class="sms-sum-item sms-sum-fail">❌ ${fail} falhado${fail!==1?'s':''}</span>`;
 }
 
-function setSyncState(s, label) {
-  const dot = document.getElementById('syncDot');
-  const lbl = document.getElementById('syncLabel');
-  dot.className = 'sync-dot' + (s !== 'ok' ? ' ' + s : '');
-  lbl.textContent = label;
-}
-
-// ══ API CALLS ════════════════════════════════════════════════════════════════
-async function apiPost(body) {
-  if (isDemoMode) return { ok: true };
-  if (!apiUrl) return { ok: true };
-  const res = await fetch(apiUrl, { method:'POST', body: JSON.stringify(body) });
-  return res.json();
-}
-
-// ══ LOCAL STORAGE ════════════════════════════════════════════════════════════
-function saveLocal() {
-  localStorage.setItem(LDATA, JSON.stringify(data));
-  localStorage.setItem(LHIST, JSON.stringify(hist));
-}
-
-// ══ HELPERS ══════════════════════════════════════════════════════════════════
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
-function normalise(i) {
-  return {
-    id: i.id||uid(), nome: i.nome||'', cat: i.cat||'Outros',
-    qty: +i.qty||0, min: +i.min||0, unit: i.unit||'unid',
-    fornecedor: i.fornecedor||'', validade: i.validade||'', notes: i.notes||''
-  };
-}
-function status(i) { if (i.qty===0) return 'danger'; if (i.qty<=i.min) return 'warn'; return 'ok'; }
-function badge(i) {
-  const s = status(i);
-  const labels = { ok:'✅ Normal', warn:'⚠️ Baixo', danger: i.qty===0?'🔴 Esgotado':'🔴 Crítico' };
-  return `<span class="badge badge-${s}">${labels[s]||labels.ok}</span>`;
-}
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-// ── Validade helpers ───────────────────────────────────────────────────────
-function expiryStatus(validade) {
-  if (!validade) return null;
-  const today = new Date();
-  // validade é YYYY-MM, comparamos com o último dia do mês
-  const parts = validade.split('-');
-  const exp = new Date(parseInt(parts[0]), parseInt(parts[1])-1+1, 0); // último dia do mês
-  const warnDate = new Date(today);
-  warnDate.setMonth(warnDate.getMonth() + 4);
-  if (exp < today) return 'expired';
-  if (exp <= warnDate) return 'expiry-warn';
-  return 'expiry-ok';
-}
-
-function expiryLabel(validade) {
-  if (!validade) return '';
-  const [year, month] = validade.split('-');
-  const monthNames = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  return monthNames[parseInt(month)-1] + '/' + year;
-}
-
-function expiryDaysLeft(validade) {
-  if (!validade) return null;
-  const parts = validade.split('-');
-  const exp = new Date(parseInt(parts[0]), parseInt(parts[1])-1+1, 0);
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  return Math.ceil((exp - today) / (1000*60*60*24));
-}
-
-function pushHist(type, nome, detail) {
-  const entry = { type, nome, detail, ts: new Date().toISOString() };
-  hist.unshift(entry);
-  if (hist.length > 300) hist.length = 300;
-  saveLocal();
-  apiPost({ action:'addHist', ...entry });
-}
-
-// ══ RENDER ALL ═══════════════════════════════════════════════════════════════
-function renderAll() {
-  renderAlerts();
-  renderStats();
-  renderCharts();
-  renderTable();
-  renderHist();
-}
-
-// ══ TABS ═════════════════════════════════════════════════════════════════════
-function showTab(id) {
-  document.querySelectorAll('.tab').forEach((t,i) => {
-    t.classList.toggle('active', ['dashboard','stock','historico','config'][i]===id);
-  });
+function renderAll(){renderBanners();renderStats();renderCharts();renderTable();renderValidades();renderCal();renderHist();}
+function showTab(id){
+  const ids=['dashboard','stock','validade','agenda','consultas','historico'];
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
   document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
   document.getElementById('sec-'+id).classList.add('active');
-  if (id==='dashboard') renderCharts();
-  if (id==='historico') renderHist();
+  if(id==='dashboard')renderCharts();
+  if(id==='historico')renderHist();
+  if(id==='agenda'){renderCal();if(calSelected)renderApts(calSelected);}
+  if(id==='consultas')renderConsultasList();
 }
 
-// ══ ALERTS ═══════════════════════════════════════════════════════════════════
-function renderAlerts() {
-  // Stock baixo
-  const low = data.filter(i=>status(i)!=='ok');
-  const banner = document.getElementById('alertBanner');
-  const items = document.getElementById('alertItems');
-  if (!low.length) { banner.classList.remove('show'); }
-  else {
-    banner.classList.add('show');
-    items.innerHTML = low.map(i=>{
-      const s = status(i);
-      const cls = s==='danger'?'esgotado':'';
-      const txt = s==='danger'?(i.qty===0?'ESGOTADO':`Crítico: ${i.qty}`):`Baixo: ${i.qty}/${i.min} ${i.unit}`;
-      return `<span class="alert-chip ${cls}">${esc(i.nome)} — ${txt}</span>`;
-    }).join('');
-  }
-
-  // Validades
-  const expItems = data.filter(i => {
-    const es = expiryStatus(i.validade);
-    return es === 'expired' || es === 'expiry-warn';
-  });
-  const expiryBanner = document.getElementById('expiryBanner');
-  const expiryItems = document.getElementById('expiryItems');
-  if (!expItems.length) { expiryBanner.classList.remove('show'); }
-  else {
-    expiryBanner.classList.add('show');
-    expiryItems.innerHTML = expItems.map(i=>{
-      const es = expiryStatus(i.validade);
-      const days = expiryDaysLeft(i.validade);
-      const cls = es === 'expired' ? 'expired' : '';
-      const txt = es === 'expired' ? 'EXPIRADO' : `${days}d restantes`;
-      return `<span class="expiry-chip ${cls}">${esc(i.nome)} — ${expiryLabel(i.validade)} (${txt})</span>`;
-    }).join('');
-  }
+// ══ BANNERS ══════════════════════════════════════════════════════
+function renderBanners(){
+  const low=data.filter(i=>stk(i)!=='ok');
+  const bs=document.getElementById('bStock');
+  if(low.length){bs.classList.add('show');document.getElementById('bStockI').innerHTML=low.map(i=>`<span class="chip${stk(i)==='danger'?' crit':''}">${esc(i.nome)} — ${stk(i)==='danger'?(i.qty===0?'ESGOTADO':'Crítico: '+i.qty):'Baixo: '+i.qty+'/'+i.min}</span>`).join('');}
+  else bs.classList.remove('show');
+  const exp=data.filter(i=>{const e=expSt(i.validade);return e&&e.s!=='ok';});
+  const be=document.getElementById('bExpire');
+  if(exp.length){be.classList.add('show');document.getElementById('bExpireI').innerHTML=exp.map(i=>{const e=expSt(i.validade);return`<span class="chip${e.s==='danger'?' crit':''}">${esc(i.nome)} — ${e.label}</span>`;}).join('');}
+  else be.classList.remove('show');
 }
 
-// ══ STATS ════════════════════════════════════════════════════════════════════
-function renderStats() {
-  const ok     = data.filter(i=>status(i)==='ok').length;
-  const warn   = data.filter(i=>status(i)==='warn').length;
-  const danger = data.filter(i=>status(i)==='danger').length;
-  const expiry = data.filter(i=>{ const es=expiryStatus(i.validade); return es==='expired'||es==='expiry-warn'; }).length;
+// ══ STATS ════════════════════════════════════════════════════════
+function renderStats(){
+  const ok=data.filter(i=>stk(i)==='ok').length,wn=data.filter(i=>stk(i)==='warn').length,dg=data.filter(i=>stk(i)==='danger').length;
+  const ex=data.filter(i=>{const e=expSt(i.validade);return e&&e.s!=='ok';}).length;
+  const today=new Date().toISOString().slice(0,10);
+  const ag=apts.filter(i=>i.data===today&&i.estado!=='cancelada'&&i.estado!=='concluida').length;
   document.getElementById('statsGrid').innerHTML=`
     <div class="stat ok"><div class="stat-val">${ok}</div><div class="stat-lbl">Normal</div></div>
-    <div class="stat warn"><div class="stat-val">${warn}</div><div class="stat-lbl">Stock Baixo</div></div>
-    <div class="stat danger"><div class="stat-val">${danger}</div><div class="stat-lbl">Crítico / Esgotado</div></div>
-    ${expiry>0?`<div class="stat expiry"><div class="stat-val">${expiry}</div><div class="stat-lbl">Validade!</div></div>`:''}
-    <div class="stat total"><div class="stat-val">${data.length}</div><div class="stat-lbl">Total de Materiais</div></div>
-  `;
+    <div class="stat wn"><div class="stat-val">${wn}</div><div class="stat-lbl">Stock Baixo</div></div>
+    <div class="stat dg"><div class="stat-val">${dg}</div><div class="stat-lbl">Crítico</div></div>
+    <div class="stat ex"><div class="stat-val">${ex}</div><div class="stat-lbl">Val. Expirar</div></div>
+    <div class="stat ag"><div class="stat-val">${ag}</div><div class="stat-lbl">Consultas Hoje</div></div>
+    <div class="stat tt"><div class="stat-val">${data.length}</div><div class="stat-lbl">Total Mat.</div></div>`;
 }
 
-// ══ CHARTS ═══════════════════════════════════════════════════════════════════
-function renderCharts() {
+// ══ CHARTS ═══════════════════════════════════════════════════════
+function renderCharts(){
   renderStats();
-  const ok=data.filter(i=>status(i)==='ok').length;
-  const warn=data.filter(i=>status(i)==='warn').length;
-  const danger=data.filter(i=>status(i)==='danger').length;
-
-  const labels=data.map(i=>i.nome.length>16?i.nome.slice(0,14)+'…':i.nome);
-  const colors=data.map(i=>({ok:'#2E7D53',warn:'#A0600A',danger:'#A82233'}[status(i)]));
-
-  if(chartBar) chartBar.destroy();
-  chartBar=new Chart(document.getElementById('chartBar'),{
-    type:'bar',
-    data:{labels,datasets:[
-      {label:'Quantidade',data:data.map(i=>i.qty),backgroundColor:colors,borderRadius:5},
-      {label:'Mínimo',data:data.map(i=>i.min),backgroundColor:'rgba(58,60,66,0.12)',borderRadius:5}
-    ]},
-    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{font:{size:11}}}},
-      scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:11}}}}}
-  });
-
-  if(chartDonut) chartDonut.destroy();
-  chartDonut=new Chart(document.getElementById('chartDonut'),{
-    type:'doughnut',
-    data:{labels:['Normal','Baixo','Crítico'],datasets:[{data:[ok,warn,danger],backgroundColor:['#2E7D53','#A0600A','#A82233'],borderWidth:0}]},
-    options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:14}}}}
-  });
-
-  const cats={};
-  data.forEach(i=>{cats[i.cat]=(cats[i.cat]||0)+i.qty;});
-  if(chartCat) chartCat.destroy();
-  chartCat=new Chart(document.getElementById('chartCat'),{
-    type:'bar',
-    data:{labels:Object.keys(cats),datasets:[{label:'Total em Stock',data:Object.values(cats),backgroundColor:'#A82233',borderRadius:5}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},
-      scales:{x:{beginAtZero:true,ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}
-  });
+  const ok=data.filter(i=>stk(i)==='ok').length,wn=data.filter(i=>stk(i)==='warn').length,dg=data.filter(i=>stk(i)==='danger').length;
+  const labels=data.map(i=>i.nome.length>15?i.nome.slice(0,13)+'…':i.nome);
+  const colors=data.map(i=>({ok:'#2E7D53',warn:'#A0600A',danger:'#A82233'}[stk(i)]));
+  if(chartBar)chartBar.destroy();
+  chartBar=new Chart(document.getElementById('chartBar'),{type:'bar',data:{labels,datasets:[{label:'Quantidade',data:data.map(i=>i.qty),backgroundColor:colors,borderRadius:5},{label:'Mínimo',data:data.map(i=>i.min),backgroundColor:'rgba(58,60,66,.12)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{labels:{font:{size:11}}}},scales:{x:{ticks:{font:{size:9}}},y:{beginAtZero:true,ticks:{font:{size:11}}}}}});
+  if(chartDonut)chartDonut.destroy();
+  chartDonut=new Chart(document.getElementById('chartDonut'),{type:'doughnut',data:{labels:['Normal','Baixo','Crítico'],datasets:[{data:[ok,wn,dg],backgroundColor:['#2E7D53','#A0600A','#A82233'],borderWidth:0}]},options:{responsive:true,cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{size:12},padding:12}}}}});
+  const cats={};data.forEach(i=>{cats[i.cat]=(cats[i.cat]||0)+i.qty;});
+  if(chartCat)chartCat.destroy();
+  chartCat=new Chart(document.getElementById('chartCat'),{type:'bar',data:{labels:Object.keys(cats),datasets:[{label:'Total',data:Object.values(cats),backgroundColor:'#A82233',borderRadius:5}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false}},scales:{x:{beginAtZero:true,ticks:{font:{size:11}}},y:{ticks:{font:{size:11}}}}}});
 }
 
-// ══ TABLE ════════════════════════════════════════════════════════════════════
-function renderTable() {
+// ══ TABLE ════════════════════════════════════════════════════════
+function renderTable(){
   const q=(document.getElementById('searchInp').value||'').toLowerCase();
   const cat=document.getElementById('filterCat').value;
   const st=document.getElementById('filterStatus').value;
-
   const cats=[...new Set(data.map(i=>i.cat))];
-  const sel=document.getElementById('filterCat');
-  const cur=sel.value;
+  const sel=document.getElementById('filterCat');const cur=sel.value;
   sel.innerHTML='<option value="">Todas as categorias</option>'+cats.map(c=>`<option value="${c}"${c===cur?' selected':''}>${c}</option>`).join('');
-
-  let filtered=data.filter(i=>{
-    if(q&&!i.nome.toLowerCase().includes(q)&&!i.cat.toLowerCase().includes(q)&&!i.fornecedor.toLowerCase().includes(q)) return false;
-    if(cat&&i.cat!==cat) return false;
-    if(st) {
-      if(st==='expiry-warn'||st==='expired') {
-        if(expiryStatus(i.validade)!==st) return false;
-      } else {
-        if(status(i)!==st) return false;
-      }
-    }
+  let f=data.filter(i=>{
+    if(q&&!i.nome.toLowerCase().includes(q)&&!i.cat.toLowerCase().includes(q)&&!(i.fornecedor||'').toLowerCase().includes(q))return false;
+    if(cat&&i.cat!==cat)return false;
+    if(st&&stk(i)!==st)return false;
     return true;
   });
-
-  document.getElementById('emptyState').style.display=filtered.length===0?'':'none';
-  document.getElementById('tableBody').innerHTML=filtered.map(i=>{
-    const es = expiryStatus(i.validade);
-    let expiryHtml = '';
-    if (i.validade) {
-      const days = expiryDaysLeft(i.validade);
-      const cls = es === 'expired' ? 'expired' : es === 'expiry-warn' ? 'warn' : 'ok';
-      const icon = es === 'expired' ? '💀' : es === 'expiry-warn' ? '⚠️' : '✅';
-      const txt = es === 'expired' ? 'EXPIRADO' : `${days}d`;
-      expiryHtml = `<div class="expiry-date ${cls}">${icon} ${expiryLabel(i.validade)} <span style="opacity:0.7">(${txt})</span></div>`;
-    }
-
-    let expiryBadge = '';
-    if (es === 'expired') expiryBadge = `<span class="badge badge-expired" style="margin-left:4px;font-size:0.65rem">💀 Expirado</span>`;
-    else if (es === 'expiry-warn') expiryBadge = `<span class="badge badge-expiry" style="margin-left:4px;font-size:0.65rem">🗓️ Validade</span>`;
-
-    return `
-    <tr>
-      <td>
-        <div class="mat-name">${esc(i.nome)}${expiryBadge}</div>
-        ${i.fornecedor||i.notes?`<div class="mat-note">${[i.fornecedor,i.notes].filter(Boolean).map(esc).join(' · ')}</div>`:''}
-      </td>
-      <td><span class="cat-tag">${esc(i.cat)}</span></td>
-      <td>
-        <div class="qty-ctrl">
-          <button class="qty-btn minus" onclick="adjustQty('${i.id}',-1)">−</button>
-          <span class="qty-val">${i.qty}</span>
-          <button class="qty-btn plus" onclick="adjustQty('${i.id}',1)">+</button>
-          <span style="color:var(--muted);font-size:0.76rem;margin-left:2px">${esc(i.unit)}</span>
-        </div>
-      </td>
-      <td style="color:var(--muted);font-size:0.84rem">${i.min} ${esc(i.unit)}</td>
-      <td>${i.validade ? expiryHtml : '<span style="color:var(--border);font-size:0.75rem">—</span>'}</td>
-      <td>${badge(i)}</td>
-      <td>
-        <div class="td-actions">
-          <button class="btn btn-sm btn-saida" onclick="openSaida('${i.id}')" title="Retirar do armário">📤 Saída</button>
-          <button class="btn btn-sm btn-primary" onclick="openEntrada('${i.id}')">📥</button>
-          <button class="btn btn-sm btn-ghost" onclick="editMat('${i.id}')">✏️</button>
-          <button class="btn btn-sm btn-del" onclick="deleteMat('${i.id}')">🗑️</button>
-        </div>
-      </td>
-    </tr>`;
+  document.getElementById('emptyState').style.display=f.length===0?'':'none';
+  document.getElementById('tableBody').innerHTML=f.map(i=>{
+    const s=stk(i);
+    const bl=s==='ok'?'✅ Normal':s==='warn'?'⚠️ Baixo':(i.qty===0?'🔴 Esgotado':'🔴 Crítico');
+    const bc=s==='ok'?'b-ok':s==='warn'?'b-wn':'b-dg';
+    const ev=expSt(i.validade);
+    let eh='<span style="color:var(--mu);font-size:.76rem">—</span>';
+    if(ev){const ec=ev.s==='danger'?'e-dg':ev.s==='warn'?'e-wn':'e-ok';const ei=ev.s==='danger'?'🚫':ev.s==='warn'?'⏳':'✓';eh=`<span class="etag ${ec}">${ei} ${ev.s==='ok'?fmtD(i.validade):ev.label}</span>`;}
+    const rc=ev?(ev.s==='danger'?'re-d':ev.s==='warn'?'re-w':''):'';
+    return`<tr class="${rc}">
+      <td><div class="mn">${esc(i.nome)}</div>${i.fornecedor||i.notes?`<div class="msub">${[i.fornecedor,i.notes].filter(Boolean).map(esc).join(' · ')}</div>`:''}</td>
+      <td><span class="ctag">${esc(i.cat)}</span></td>
+      <td><div class="qty-ctrl"><button class="qbtn m" onclick="adjQty('${i.id}',-1)">−</button><span class="qval">${i.qty}</span><button class="qbtn p" onclick="adjQty('${i.id}',1)">+</button><span style="color:var(--mu);font-size:.74rem">${esc(i.unit)}</span></div></td>
+      <td style="color:var(--mu);font-size:.82rem">${i.min} ${esc(i.unit)}</td>
+      <td>${eh}${i.lote?`<div style="font-size:.68rem;color:var(--mu)">Lote: ${esc(i.lote)}</div>`:''}</td>
+      <td><span class="badge ${bc}">${bl}</span></td>
+      <td><div class="tda">
+        <button class="btn btn-sm btn-p" onclick="openEntrada('${i.id}')">📥</button>
+        <button class="btn btn-sm btn-g" onclick="editMat('${i.id}')">✏️</button>
+        <button class="btn btn-sm btn-del" onclick="deleteMat('${i.id}')">🗑️</button>
+      </div></td></tr>`;
   }).join('');
 }
 
-// ══ ADJUST QTY (botões ± rápidos) ════════════════════════════════════════════
-async function adjustQty(id, delta) {
-  const i=data.find(x=>x.id===id); if(!i) return;
-  const prev=i.qty;
-  i.qty=Math.max(0,i.qty+delta);
-  saveLocal(); renderTable(); renderAlerts();
-  pushHist(delta>0?'in':'out',i.nome,`${delta>0?'+':''}${delta} ${i.unit} (${prev}→${i.qty})`);
-  setSyncState('syncing','A guardar…');
-  await apiPost({action:'update',...i});
-  setSyncState('ok','Guardado');
-  toast(delta>0?`+1 em ${i.nome}`:`-1 em ${i.nome}`);
-}
-
-// ══ SAÍDA MANUAL ══════════════════════════════════════════════════════════════
-function openSaida(id) {
-  saidaId = id;
-  const i = data.find(x=>x.id===id);
-  document.getElementById('saidaInfo').textContent = `${i.nome} — Stock actual: ${i.qty} ${i.unit}`;
-  document.getElementById('saidaQty').value = 1;
-  document.getElementById('saidaQty').max = i.qty;
-  document.getElementById('saidaNota').value = '';
-  document.getElementById('saidaBg').classList.add('open');
-  setTimeout(()=>document.getElementById('saidaQty').focus(), 50);
-}
-function closeSaida() { document.getElementById('saidaBg').classList.remove('open'); saidaId = null; }
-
-async function confirmSaida() {
-  const q = parseInt(document.getElementById('saidaQty').value);
-  const nota = document.getElementById('saidaNota').value.trim();
-  if (!q || q < 1) { alert('Quantidade inválida.'); return; }
-  const i = data.find(x=>x.id===saidaId);
-  if (q > i.qty) { alert(`Só tens ${i.qty} ${i.unit} em stock!`); return; }
-  const prev = i.qty;
-  i.qty -= q;
-  saveLocal();
-  pushHist('out', i.nome, `-${q} ${i.unit} (${prev}→${i.qty})${nota?' — '+nota:''}`);
-  setSyncState('syncing','A guardar…');
-  await apiPost({action:'update',...i});
-  setSyncState('ok','Guardado');
-  toast(`📤 ${q} retirado(s) de ${i.nome}`);
-  closeSaida(); renderAll();
-}
-
-// ══ MODAL ADD/EDIT ════════════════════════════════════════════════════════════
-function openModal(id) {
-  editId=id||null;
-  document.getElementById('modalTitle').textContent=id?'Editar Material':'Novo Material';
-  if(id) {
-    const i=data.find(x=>x.id===id);
-    document.getElementById('fNome').value=i.nome;
-    document.getElementById('fCat').value=i.cat;
-    document.getElementById('fQty').value=i.qty;
-    document.getElementById('fMin').value=i.min;
-    document.getElementById('fUnit').value=i.unit||'';
-    document.getElementById('fForn').value=i.fornecedor||'';
-    document.getElementById('fValidade').value=i.validade||'';
-    document.getElementById('fNotes').value=i.notes||'';
-  } else {
-    ['fNome','fQty','fMin','fUnit','fForn','fValidade','fNotes'].forEach(x=>document.getElementById(x).value='');
-    document.getElementById('fCat').value='Consumíveis';
-  }
-  document.getElementById('modalBg').classList.add('open');
-  setTimeout(()=>document.getElementById('fNome').focus(),50);
-}
-function closeModal(){ document.getElementById('modalBg').classList.remove('open'); editId=null; }
-function editMat(id){ openModal(id); }
-
-async function saveMat() {
-  const nome=document.getElementById('fNome').value.trim();
-  const qty=parseInt(document.getElementById('fQty').value);
-  const min=parseInt(document.getElementById('fMin').value);
-  if(!nome||isNaN(qty)||isNaN(min)){ alert('Preenche os campos obrigatórios (nome, quantidade e mínimo).'); return; }
-  const item={
-    nome, cat:document.getElementById('fCat').value, qty, min,
-    unit:document.getElementById('fUnit').value.trim()||'unid',
-    fornecedor:document.getElementById('fForn').value.trim(),
-    validade:document.getElementById('fValidade').value||'',
-    notes:document.getElementById('fNotes').value.trim()
-  };
-
-  setSyncState('syncing','A guardar…');
-  if(editId) {
-    const i=data.find(x=>x.id===editId);
-    const prev=i.qty;
-    Object.assign(i,item);
-    saveLocal();
-    pushHist('edit',nome,`Editado — qty: ${prev}→${qty}`);
-    await apiPost({action:'update',id:editId,...item});
-    toast('Material atualizado!');
-  } else {
-    const id=uid();
-    data.push({id,...item});
-    saveLocal();
-    pushHist('in',nome,`Adicionado — qty: ${qty}`);
-    await apiPost({action:'add',id,...item});
-    toast('Material adicionado!');
-  }
-  setSyncState('ok','Guardado');
-  closeModal(); renderAll();
-}
-
-// ══ ENTRADA ══════════════════════════════════════════════════════════════════
-function openEntrada(id) {
-  entradaId=id;
-  const i=data.find(x=>x.id===id);
-  document.getElementById('entradaInfo').textContent=`${i.nome} — Stock atual: ${i.qty} ${i.unit}`;
-  document.getElementById('entradaQty').value=1;
-  document.getElementById('entradaNota').value='';
-  document.getElementById('entradaValidade').value=i.validade||'';
-  document.getElementById('entradaBg').classList.add('open');
-  setTimeout(()=>document.getElementById('entradaQty').focus(),50);
-}
-function closeEntrada(){ document.getElementById('entradaBg').classList.remove('open'); entradaId=null; }
-
-async function confirmEntrada() {
-  const q=parseInt(document.getElementById('entradaQty').value);
-  if(!q||q<1){ alert('Quantidade inválida.'); return; }
-  const nota=document.getElementById('entradaNota').value.trim();
-  const novaValidade=document.getElementById('entradaValidade').value||'';
-  const i=data.find(x=>x.id===entradaId);
-  const prev=i.qty;
-  i.qty+=q;
-  if(novaValidade) i.validade=novaValidade;
-  saveLocal();
-  pushHist('in',i.nome,`+${q} ${i.unit} (${prev}→${i.qty})${nota?' — '+nota:''}${novaValidade?' | Validade: '+novaValidade:''}`);
-  setSyncState('syncing','A guardar…');
-  await apiPost({action:'update',...i});
-  setSyncState('ok','Guardado');
-  toast(`+${q} adicionados a ${i.nome}`);
-  closeEntrada(); renderAll();
-}
-
-// ══ DELETE ════════════════════════════════════════════════════════════════════
-async function deleteMat(id) {
-  const i=data.find(x=>x.id===id);
-  if(!confirm(`Eliminar "${i.nome}"?\nEsta ação não pode ser desfeita.`)) return;
-  data=data.filter(x=>x.id!==id);
-  saveLocal();
-  pushHist('out',i.nome,'Material eliminado');
-  setSyncState('syncing','A eliminar…');
-  await apiPost({action:'delete',id});
-  setSyncState('ok','Guardado');
-  renderAll(); toast('Material eliminado!');
-}
-
-// ══ HISTORICO ════════════════════════════════════════════════════════════════
-function renderHist() {
-  const h=hist.length? hist : JSON.parse(localStorage.getItem(LHIST)||'[]');
-  const list=document.getElementById('histList');
-  if(!h.length){ list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Sem movimentos ainda.</p></div>'; return; }
-  const icons={in:'📥',out:'📤',edit:'✏️'};
-  list.innerHTML=h.slice(0,100).map(e=>{
-    const d=new Date(e.ts);
-    const date=isNaN(d)?e.ts:d.toLocaleDateString('pt-PT')+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="hist-item">
-      <div class="hist-ico ${e.type}">${icons[e.type]||'•'}</div>
-      <div class="hist-body">
-        <div class="hist-name">${esc(e.nome)}</div>
-        <div class="hist-detail">${esc(e.detail)}</div>
-      </div>
-      <div class="hist-time">${date}</div>
+// ══ VALIDADES ════════════════════════════════════════════════════
+function renderValidades(){
+  const wv=data.filter(i=>i.validade).sort((a,b)=>new Date(a.validade)-new Date(b.validade));
+  const list=document.getElementById('valList');
+  if(!wv.length){list.innerHTML='<div class="empty"><div class="empty-icon">📅</div><p>Nenhum material tem validade registada.</p></div>';return;}
+  list.innerHTML=wv.map(i=>{
+    const ev=expSt(i.validade);
+    const ic=ev.s==='danger'?'🚫':ev.s==='warn'?'⏳':'✅';
+    const ec=ev.s==='danger'?'e-dg':ev.s==='warn'?'e-wn':'e-ok';
+    return`<div class="vrow">
+      <div style="font-size:1.1rem">${ic}</div>
+      <div style="flex:1"><div style="font-weight:600;font-size:.84rem">${esc(i.nome)}</div><div style="font-size:.72rem;color:var(--mu)">${esc(i.cat)}${i.lote?' · Lote: '+esc(i.lote):''} · Qty: ${i.qty} ${esc(i.unit)}</div></div>
+      <span class="etag ${ec}">${ev.label}</span>
+      <button class="btn btn-sm btn-g" onclick="editMat('${i.id}')">✏️</button>
     </div>`;
   }).join('');
 }
 
-async function clearHist() {
-  if(!confirm('Limpar todo o histórico?')) return;
-  hist=[];
-  localStorage.setItem(LHIST,'[]');
-  renderHist();
-  await apiPost({action:'clearHist'});
+// ══ ADJUST QTY ═══════════════════════════════════════════════════
+async function adjQty(id,delta){
+  const i=data.find(x=>x.id===id);if(!i)return;
+  const prev=i.qty;i.qty=Math.max(0,i.qty+delta);saveLocal();renderTable();renderBanners();renderStats();
+  pushHist(delta>0?'in':'out',i.nome,`${delta>0?'+':''}${delta} ${i.unit} (${prev}→${i.qty})`);
+  setSS('syncing','A guardar…');await apiPost({action:'update',...i});setSS('ok','Guardado');
+  toast(delta>0?`+1 em ${i.nome}`:`-1 em ${i.nome}`);
 }
 
-// ══ EXPORT ════════════════════════════════════════════════════════════════════
-function exportCSV() {
-  const rows=[['Nome','Categoria','Quantidade','Mínimo','Unidade','Fornecedor','Validade','Estado','Notas']];
-  data.forEach(i=>rows.push([
-    i.nome, i.cat, i.qty, i.min, i.unit, i.fornecedor, i.validade||'',
-    status(i)==='ok'?'Normal':status(i)==='warn'?'Baixo':'Crítico', i.notes
-  ]));
-  const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
-  a.download='LMC_Stock_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click(); toast('Ficheiro exportado!');
+// ══ MODAL STOCK ══════════════════════════════════════════════════
+function openModal(id){
+  editId=id||null;document.getElementById('modalTitle').textContent=id?'Editar Material':'Novo Material';
+  const fields=['fNome','fQty','fMin','fUnit','fForn','fValidade','fLote','fNotes'];
+  if(id){const i=data.find(x=>x.id===id);document.getElementById('fNome').value=i.nome;document.getElementById('fCat').value=i.cat;document.getElementById('fQty').value=i.qty;document.getElementById('fMin').value=i.min;document.getElementById('fUnit').value=i.unit||'';document.getElementById('fForn').value=i.fornecedor||'';document.getElementById('fValidade').value=i.validade||'';document.getElementById('fLote').value=i.lote||'';document.getElementById('fNotes').value=i.notes||'';}
+  else{fields.forEach(x=>document.getElementById(x).value='');document.getElementById('fCat').value='Consumíveis';}
+  document.getElementById('modalBg').classList.add('open');setTimeout(()=>document.getElementById('fNome').focus(),50);
+}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');editId=null;}
+function editMat(id){openModal(id);}
+
+async function saveMat(){
+  const nome=document.getElementById('fNome').value.trim();
+  const qty=parseInt(document.getElementById('fQty').value);
+  const min=parseInt(document.getElementById('fMin').value);
+  if(!nome||isNaN(qty)||isNaN(min)){alert('Preenche os campos obrigatórios.');return;}
+  const item={nome,cat:document.getElementById('fCat').value,qty,min,unit:document.getElementById('fUnit').value.trim()||'unid',fornecedor:document.getElementById('fForn').value.trim(),notes:document.getElementById('fNotes').value.trim(),validade:document.getElementById('fValidade').value,lote:document.getElementById('fLote').value.trim()};
+  setSS('syncing','A guardar…');
+  if(editId){const i=data.find(x=>x.id===editId);const prev=i.qty;Object.assign(i,item);saveLocal();pushHist('edit',nome,`Editado qty:${prev}→${qty}`);await apiPost({action:'update',id:editId,...item});toast('Atualizado!');}
+  else{const id=uid();data.push({id,...item});saveLocal();pushHist('in',nome,`Adicionado qty:${qty}`);await apiPost({action:'add',id,...item});toast('Adicionado!');}
+  setSS('ok','Guardado');closeModal();renderAll();
 }
 
-// ══ CONFIG ════════════════════════════════════════════════════════════════════
-async function saveConfig() {
-  const url=document.getElementById('configUrl').value.trim();
-  if(!url){ alert('Introduz um URL válido.'); return; }
-  apiUrl=url;
-  isDemoMode=false;
-  localStorage.setItem(LKEY,url);
-  localStorage.removeItem(LDEMO);
-  await syncNow();
+// ══ ENTRADA ══════════════════════════════════════════════════════
+function openEntrada(id){
+  entId=id;const i=data.find(x=>x.id===id);
+  document.getElementById('entradaInfo').textContent=`${i.nome} — Stock atual: ${i.qty} ${i.unit}`;
+  document.getElementById('entQty').value=1;document.getElementById('entVal').value=i.validade||'';document.getElementById('entLote').value='';document.getElementById('entNota').value='';
+  document.getElementById('entradaBg').classList.add('open');setTimeout(()=>document.getElementById('entQty').focus(),50);
+}
+function closeEntrada(){document.getElementById('entradaBg').classList.remove('open');entId=null;}
+async function confirmEntrada(){
+  const q=parseInt(document.getElementById('entQty').value);if(!q||q<1){alert('Quantidade inválida.');return;}
+  const nota=document.getElementById('entNota').value.trim();const nv=document.getElementById('entVal').value;const nl=document.getElementById('entLote').value.trim();
+  const i=data.find(x=>x.id===entId);const prev=i.qty;i.qty+=q;if(nv)i.validade=nv;if(nl)i.lote=nl;
+  saveLocal();pushHist('in',i.nome,`+${q} ${i.unit} (${prev}→${i.qty})${nota?' — '+nota:''}${nv?' val:'+fmtD(nv):''}`);
+  setSS('syncing','A guardar…');await apiPost({action:'update',...i});setSS('ok','Guardado');
+  toast(`+${q} adicionados a ${i.nome}`);closeEntrada();renderAll();
 }
 
-function saveEmailConfig() {
-  const email = document.getElementById('configEmail').value.trim();
-  if (!email) { alert('Introduz um email válido.'); return; }
-  localStorage.setItem(LEMAIL, email);
-  toast('✅ Email guardado! Lembra-te de o colocar no script do Google Apps Script.');
+// ══ DELETE ═══════════════════════════════════════════════════════
+async function deleteMat(id){
+  const i=data.find(x=>x.id===id);if(!confirm(`Eliminar "${i.nome}"?`))return;
+  data=data.filter(x=>x.id!==id);saveLocal();pushHist('out',i.nome,'Eliminado');
+  setSS('syncing','A eliminar…');await apiPost({action:'delete',id});setSS('ok','Guardado');renderAll();toast('Eliminado!');
 }
 
-async function sendTestAlert() {
-  if (isDemoMode || !apiUrl) {
-    toast('⚠️ Não está ligado ao Google Sheets');
-    return;
+// ══ AGENDA / CALENDÁRIO ══════════════════════════════════════════
+const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function calNav(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();if(calSelected)renderApts(calSelected);}
+
+function renderCal(){
+  document.getElementById('calTitle').textContent=meses[calMonth]+' '+calYear;
+  const first=new Date(calYear,calMonth,1).getDay();
+  const days=new Date(calYear,calMonth+1,0).getDate();
+  const today=new Date().toISOString().slice(0,10);
+  const aptDays=new Set(apts.filter(a=>a.estado!=='cancelada').map(a=>a.data?String(a.data).slice(0,10):''));
+  let html='';
+  for(let i=0;i<first;i++){
+    const d=new Date(calYear,calMonth,-(first-1-i));
+    html+=`<div class="cal-day other-month">${d.getDate()}</div>`;
   }
-  setSyncState('syncing','A enviar alerta…');
-  try {
-    const res = await fetch(apiUrl + '?action=sendAlert');
-    const j = await res.json();
-    if (j.ok) {
-      toast('📧 Alerta enviado por email!');
-    } else {
-      toast('⚠️ Sem alertas para enviar (tudo OK)');
-    }
-    setSyncState('ok','Ligado');
-  } catch(e) {
-    setSyncState('error','Erro');
-    toast('❌ Erro ao enviar — verifica o script');
+  for(let d=1;d<=days;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isTd=ds===today,isSel=ds===calSelected,hasA=aptDays.has(ds);
+    html+=`<div class="cal-day${isTd?' today':''}${isSel?' selected':''}${hasA?' has-apt':''}" onclick="selectDay('${ds}')">${d}</div>`;
   }
+  document.getElementById('calDays').innerHTML=html;
 }
 
-function copyScript() {
-  navigator.clipboard.writeText(APPS_SCRIPT).then(()=>toast('✅ Script copiado!')).catch(()=>{
-    const ta=document.createElement('textarea');
-    ta.value=APPS_SCRIPT; document.body.appendChild(ta); ta.select();
-    document.execCommand('copy'); document.body.removeChild(ta);
-    toast('✅ Script copiado!');
+function selectDay(ds){
+  calSelected=ds;renderCal();renderApts(ds);
+  document.getElementById('btnNewApt').style.display='';
+  document.getElementById('aptPanelTitle').textContent=fmtD(ds);
+}
+
+function renderApts(ds){
+  const dayApts=apts.filter(a=>a.data&&String(a.data).slice(0,10)===ds).sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const list=document.getElementById('aptList');
+  if(!dayApts.length){list.innerHTML='<div class="empty-apt"><div class="ei">🦷</div><p>Sem consultas marcadas para este dia.</p></div>';return;}
+  const stlabels={marcada:'Marcada',confirmada:'Confirmada',cancelada:'Cancelada',concluida:'Concluída'};
+  const stcls={marcada:'as-marcada',confirmada:'as-confirmada',cancelada:'as-cancelada',concluida:'as-concluida'};
+  list.innerHTML=dayApts.map(a=>`
+    <div class="apt-item">
+      <div class="apt-time">${esc(a.hora||'--:--')}</div>
+      <div class="apt-body">
+        <div class="apt-name">${esc(a.paciente)}</div>
+        <div class="apt-detail">${esc(a.tipo)}${a.medico?' · '+esc(a.medico):''}${a.duracao?' · '+a.duracao+' min':''}${a.tel?' · 📞 '+esc(a.tel):''}</div>
+        ${a.notes?`<div class="apt-detail" style="margin-top:2px;font-style:italic">${esc(a.notes)}</div>`:''}
+        <div class="apt-actions">
+          <span class="apt-status ${stcls[a.estado]||'as-marcada'}">${stlabels[a.estado]||a.estado}</span>
+          <button class="btn btn-sm btn-g" onclick="editApt('${a.id}')">✏️</button>
+          <button class="btn btn-sm btn-del" onclick="deleteApt('${a.id}')">🗑️</button>
+          ${a.estado!=='concluida'?`<button class="btn btn-sm" style="background:var(--okb);color:var(--ok)" onclick="markConcluida('${a.id}')">✅ Concluída</button>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+// ══ LISTA DE CONSULTAS (separador próprio) ══════════════════════
+function renderConsultasList(){
+  const q=(document.getElementById('aptSearchInp').value||'').toLowerCase();
+  const fe=document.getElementById('aptFilterEstado').value;
+  const fp=document.getElementById('aptFilterPeriodo').value;
+  const fs=document.getElementById('aptFilterSms').value;
+
+  const today=new Date(); today.setHours(0,0,0,0);
+  const todayStr=today.toISOString().slice(0,10);
+  const tmrw=new Date(today); tmrw.setDate(tmrw.getDate()+1);
+  const tmrwStr=tmrw.toISOString().slice(0,10);
+  const weekEnd=new Date(today); weekEnd.setDate(weekEnd.getDate()+7);
+
+  let f=apts.filter(a=>{
+    if(q&&!String(a.paciente||'').toLowerCase().includes(q)&&!String(a.tel||'').includes(q))return false;
+    if(fe&&a.estado!==fe)return false;
+    if(fs&&smsEstadoFor(a)!==fs)return false;
+    if(!a.data)return false;
+    const ds=String(a.data).slice(0,10);
+    const dDate=new Date(ds);
+    if(fp==='hoje'&&ds!==todayStr)return false;
+    if(fp==='amanha'&&ds!==tmrwStr)return false;
+    if(fp==='semana'&&(dDate<today||dDate>weekEnd))return false;
+    if(fp==='proximas'&&dDate<today)return false;
+    if(fp==='passadas'&&dDate>=today)return false;
+    return true;
+  }).sort((a,b)=>{
+    const da=String(a.data).slice(0,10)+' '+(a.hora||'');
+    const db=String(b.data).slice(0,10)+' '+(b.hora||'');
+    return fp==='passadas'?db.localeCompare(da):da.localeCompare(db);
   });
+
+  document.getElementById('emptyConsultas').style.display=f.length===0?'':'none';
+  const stlabels={marcada:'Marcada',confirmada:'Confirmada',cancelada:'Cancelada',concluida:'Concluída'};
+  const stcls={marcada:'as-marcada',confirmada:'as-confirmada',cancelada:'as-cancelada',concluida:'as-concluida'};
+
+  document.getElementById('consultasTableBody').innerHTML=f.map(a=>{
+    const ds=String(a.data).slice(0,10);
+    return`<tr>
+      <td><strong>${fmtD(ds)}</strong></td>
+      <td>${esc(a.hora||'--:--')}</td>
+      <td><div class="mn">${esc(a.paciente)}</div>${a.notes?`<div class="msub">${esc(a.notes)}</div>`:''}</td>
+      <td style="font-size:.80rem">${a.tel?'📞 '+esc(a.tel):'<span style="color:var(--mu)">—</span>'}</td>
+      <td><span class="ctag">${esc(a.tipo||'')}</span></td>
+      <td style="font-size:.80rem">${a.medico?esc(a.medico):'<span style="color:var(--mu)">—</span>'}</td>
+      <td><span class="apt-status ${stcls[a.estado]||'as-marcada'}">${stlabels[a.estado]||a.estado}</span></td>
+      <td>${smsBadge(a)}</td>
+      <td><div class="tda">
+        <button class="btn btn-sm btn-g" onclick="editApt('${a.id}')">✏️</button>
+        <button class="btn btn-sm btn-del" onclick="deleteApt('${a.id}')">🗑️</button>
+        ${a.estado!=='concluida'?`<button class="btn btn-sm" style="background:var(--okb);color:var(--ok)" onclick="markConcluidaFromList('${a.id}')">✅</button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('');
+  renderSmsSummary();
 }
 
-// ══ UTILS ════════════════════════════════════════════════════════════════════
-function closeBg(e,id){
-  if(e.target===document.getElementById(id)) {
-    if(id==='modalBg') closeModal();
-    else if(id==='entradaBg') closeEntrada();
-    else if(id==='saidaBg') closeSaida();
+async function markConcluidaFromList(id){
+  const a=apts.find(x=>x.id===id);a.estado='concluida';saveLocal();
+  await apiPost({action:'updateApt',...a});renderConsultasList();renderStats();toast('Marcada como concluída!');
+}
+
+// ══ MODAL CONSULTA ════════════════════════════════════════════════
+function openAptModal(id){
+  aptEditId=id||null;
+  document.getElementById('aptModalTitle').textContent=id?'Editar Consulta':'Nova Consulta';
+  if(id){
+    const a=apts.find(x=>x.id===id);
+    document.getElementById('aptData').value=a.data?String(a.data).slice(0,10):'';
+    document.getElementById('aptHora').value=a.hora||'09:00';
+    document.getElementById('aptPaciente').value=a.paciente||'';
+    document.getElementById('aptTel').value=a.tel||'';
+    document.getElementById('aptTipo').value=a.tipo||'Consulta de Rotina';
+    document.getElementById('aptDur').value=a.duracao||60;
+    document.getElementById('aptMedico').value=a.medico||'';
+    document.getElementById('aptEstado').value=a.estado||'marcada';
+    document.getElementById('aptNotes').value=a.notes||'';
+  } else {
+    document.getElementById('aptData').value=calSelected||new Date().toISOString().slice(0,10);
+    document.getElementById('aptHora').value='09:00';
+    ['aptPaciente','aptTel','aptMedico','aptNotes'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('aptTipo').value='Consulta de Rotina';
+    document.getElementById('aptDur').value=60;
+    document.getElementById('aptEstado').value='marcada';
   }
+  document.getElementById('aptBg').classList.add('open');setTimeout(()=>document.getElementById('aptPaciente').focus(),50);
 }
-function toast(msg,dur=2800){
-  const t=document.getElementById('toast');
-  t.textContent=msg; t.classList.add('show');
-  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('show'),dur);
+function closeAptModal(){document.getElementById('aptBg').classList.remove('open');aptEditId=null;}
+function editApt(id){openAptModal(id);}
+
+async function saveApt(){
+  const pac=document.getElementById('aptPaciente').value.trim();
+  const dat=document.getElementById('aptData').value;
+  const hor=document.getElementById('aptHora').value;
+  if(!pac||!dat||!hor){alert('Preenche nome do paciente, data e hora.');return;}
+  const apt={data:dat,hora:hor,paciente:pac,tel:document.getElementById('aptTel').value.trim(),tipo:document.getElementById('aptTipo').value,duracao:parseInt(document.getElementById('aptDur').value)||60,medico:document.getElementById('aptMedico').value.trim(),estado:document.getElementById('aptEstado').value,notes:document.getElementById('aptNotes').value.trim()};
+  setSS('syncing','A guardar…');
+  if(aptEditId){const a=apts.find(x=>x.id===aptEditId);Object.assign(a,apt);saveLocal();await apiPost({action:'updateApt',id:aptEditId,...apt});toast('Consulta atualizada!');}
+  else{const id=uid();apts.push({id,...apt});saveLocal();await apiPost({action:'addApt',id,...apt});toast('Consulta marcada!');}
+  setSS('ok','Guardado');closeAptModal();renderCal();if(calSelected)renderApts(calSelected);renderStats();renderConsultasList();
 }
+
+async function markConcluida(id){
+  const a=apts.find(x=>x.id===id);a.estado='concluida';saveLocal();
+  await apiPost({action:'updateApt',...a});renderApts(calSelected);renderStats();renderConsultasList();toast('Marcada como concluída!');
+}
+async function deleteApt(id){
+  const a=apts.find(x=>x.id===id);if(!confirm(`Eliminar consulta de "${a.paciente}"?`))return;
+  apts=apts.filter(x=>x.id!==id);saveLocal();await apiPost({action:'deleteApt',id});
+  renderCal();if(calSelected)renderApts(calSelected);renderStats();renderConsultasList();toast('Consulta eliminada!');
+}
+
+// ══ HISTORICO ════════════════════════════════════════════════════
+function renderHist(){
+  const list=document.getElementById('histList');
+  if(!hist.length){list.innerHTML='<div class="empty"><div class="empty-icon">📋</div><p>Sem movimentos.</p></div>';return;}
+  const ic={in:'📥',out:'📤',edit:'✏️'};
+  list.innerHTML=hist.slice(0,150).map(e=>{const d=new Date(e.ts);const dt=isNaN(d)?e.ts:d.toLocaleDateString('pt-PT')+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});return`<div class="hit"><div class="hico ${e.type}">${ic[e.type]||'•'}</div><div class="hbody"><div class="hname">${esc(e.nome)}</div><div class="hdet">${esc(e.detail)}</div></div><div class="htime">${dt}</div></div>`;}).join('');
+}
+async function clearHist(){if(!confirm('Limpar histórico?'))return;hist=[];localStorage.setItem(LHIST,'[]');renderHist();await apiPost({action:'clearHist'});}
+
+// ══ EXPORT ═══════════════════════════════════════════════════════
+function exportCSV(){
+  const rows=[['Nome','Categoria','Quantidade','Mínimo','Unidade','Fornecedor','Validade','Lote','Estado','Notas']];
+  data.forEach(i=>rows.push([i.nome,i.cat,i.qty,i.min,i.unit,i.fornecedor,i.validade?fmtD(i.validade):'',i.lote,stk(i)==='ok'?'Normal':stk(i)==='warn'?'Baixo':'Crítico',i.notes]));
+  const csv=rows.map(r=>r.map(c=>`"${String(c||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='LMC_Stock_'+new Date().toISOString().slice(0,10)+'.csv';a.click();toast('Exportado!');
+}
+
+// ══ CONFIG ═══════════════════════════════════════════════════════
+function closeBg(e,id){if(e.target===document.getElementById(id)){if(id==='modalBg')closeModal();else if(id==='entradaBg')closeEntrada();else if(id==='aptBg')closeAptModal();}}
+function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
 </script>
 </body>
 </html>
