@@ -230,9 +230,49 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
 #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(90px);background:var(--chd);color:var(--wh);padding:10px 20px;border-radius:30px;font-size:.82rem;font-weight:600;z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 24px rgba(0,0,0,.25);pointer-events:none;font-family:var(--fb);border-left:4px solid var(--cr);}
 #toast.show{transform:translateX(-50%) translateY(0);}
 @media(max-width:480px){.brand-sub,.slabel{display:none;}.hbtn span{display:none;}td{padding:7px 8px;}.tda{flex-direction:column;}}
+
+/* LOGIN */
+.login-bg{position:fixed;inset:0;background:linear-gradient(135deg,#2A2C30,#15161a);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px;}
+.login-card{background:var(--wh);border-radius:18px;padding:30px 26px;width:100%;max-width:380px;box-shadow:var(--shm);}
+.login-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:22px;}
+.login-logo .li{font-size:1.7rem;}
+.login-logo .lt{font-family:var(--fd);font-weight:800;font-size:1.15rem;color:var(--chd);}
+.login-err{background:var(--dgb);color:var(--dg);font-size:.78rem;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:12px;display:none;}
+.login-err.show{display:block;}
+.login-ok{background:var(--okb);color:var(--ok);font-size:.78rem;font-weight:600;padding:8px 10px;border-radius:8px;margin-bottom:12px;display:none;}
+.login-ok.show{display:block;}
+.login-switch{text-align:center;margin-top:14px;font-size:.78rem;color:var(--mu);}
+.login-switch a{color:var(--cr);font-weight:700;cursor:pointer;text-decoration:none;}
+.login-switch a:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
+
+<div class="login-bg" id="loginBg">
+  <div class="login-card">
+    <div class="login-logo"><span class="li">🦷</span><div class="lt">LMC Clínica Dentária</div></div>
+
+    <div id="loginView">
+      <div class="login-err" id="loginErr"></div>
+      <div class="fg"><label>Utilizador</label><input type="text" id="loginUser" autocomplete="username"></div>
+      <div class="fg"><label>Password</label><input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn btn-p" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
+      <div class="login-switch">Ainda não tens conta? <a onclick="showSignup()">Criar conta</a></div>
+    </div>
+
+    <div id="signupView" style="display:none">
+      <div class="login-err" id="signupErr"></div>
+      <div class="login-ok" id="signupOk"></div>
+      <div class="fg"><label>Utilizador</label><input type="text" id="suUser" autocomplete="username"></div>
+      <div class="fg"><label>Password</label><input type="password" id="suPass" autocomplete="new-password"></div>
+      <div class="fg"><label>Confirmar Password</label><input type="password" id="suPass2" autocomplete="new-password"></div>
+      <div class="fg"><label>Chave Mestra</label><input type="password" id="suMaster"></div>
+      <button class="btn btn-p" style="width:100%;justify-content:center" onclick="doSignup()">Criar conta</button>
+      <div class="login-switch">Já tens conta? <a onclick="showLogin()">Entrar</a></div>
+    </div>
+  </div>
+</div>
+
 
 <header>
   <div class="hbrand">
@@ -252,6 +292,9 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
     <button class="hbtn" onclick="syncNow()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
       <span>Sync</span>
+    </button>
+    <button class="hbtn" id="logoutBtn" onclick="doLogout()" style="display:none">
+      <span>🚪</span><span>Sair</span>
     </button>
     <button class="hbtn cr" onclick="openModal()">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -385,7 +428,7 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
       </p>
       <ul style="font-size:.80rem;color:var(--ch);line-height:1.7;padding-left:20px;margin-bottom:10px">
         <li><strong>📦 Email de Alertas de Stock</strong> — esgotados, stock baixo, validades expiradas e a expirar (4 meses).</li>
-        <li><strong>🗓️ Email de Consultas do Dia Seguinte</strong> — lista das consultas marcadas para amanhã, enviado separadamente.</li>
+        <li><strong>🗓️ Email de Consultas Próximas</strong> — lista das consultas marcadas para dentro de 2 dias, enviado separadamente.</li>
         <li><strong>📱 SMS aos Pacientes (via MacroDroid)</strong> — o telemóvel da clínica lê os SMS pendentes e envia automaticamente um dia antes da consulta.</li>
       </ul>
       <p style="font-size:.80rem;color:var(--mu);line-height:1.6;margin-bottom:10px">
@@ -512,17 +555,17 @@ const FIXED_API_URL = 'https://script.google.com/macros/s/AKfycby-uhr5uxV7RI42B5
 // ║     → Substitui pelo email real da clínica                       ║
 const ALERT_EMAIL_HTML = 'lmc.clinicadentaria@gmail.com';
 // ║                                                                  ║
-// ║  3. Texto do SMS enviado ao paciente no dia anterior              ║
-// ║     → Usa {nome}, {hora}, {tipo}, {medico} como variáveis        ║
+// ║  3. Texto do SMS enviado ao paciente 2 dias antes da consulta     ║
+// ║     → Usa {nome}, {data}, {hora}, {tipo}, {medico} como variáveis ║
 // ║     → Este texto é só informativo aqui; o envio real é feito     ║
 // ║       pelo MacroDroid no telemóvel da clínica (ver instruções    ║
 // ║       no separador Histórico / documentação entregue)            ║
-const SMS_TEMPLATE = 'Ola {nome}! Lembrete LMC Clinica Dentaria: tem consulta amanha as {hora} ({tipo}). Para remarcar contacte-nos. Obrigado!';
+const SMS_TEMPLATE = 'Ola {nome}! Lembrete LMC Clinica Dentaria: tem consulta no dia {data} as {hora} ({tipo}). Para remarcar contacte-nos. Obrigado!';
 // ╚══════════════════════════════════════════════════════════════════╝
 
 
 // ══ STATE ════════════════════════════════════════════════════════
-const LKEY='lmc_url3'; const LDATA='lmc_d3'; const LHIST='lmc_h3'; const LAPTS='lmc_a3'; const LSMS='lmc_s3';
+const LKEY='lmc_url3'; const LDATA='lmc_d3'; const LHIST='lmc_h3'; const LAPTS='lmc_a3'; const LSMS='lmc_s3'; const LUSER='lmc_user1';
 let apiUrl = FIXED_API_URL || localStorage.getItem(LKEY) || '';
 let data=[], hist=[], apts=[], sms=[];
 let editId=null, entId=null, aptEditId=null;
@@ -532,20 +575,106 @@ let calYear, calMonth, calSelected=null;
 (function(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();})();
 
 // ══ INIT ═════════════════════════════════════════════════════════
-(async function init(){
-  const cfgEl=document.getElementById('configUrl'); if(apiUrl&&cfgEl){cfgEl.value=apiUrl;}
+// ══ LOGIN ══
+function showSignup(){document.getElementById('loginView').style.display='none';document.getElementById('signupView').style.display='block';}
+function showLogin(){document.getElementById('signupView').style.display='none';document.getElementById('loginView').style.display='block';}
+function loginErr(msg){const e=document.getElementById('loginErr');e.textContent=msg;e.classList.add('show');}
+function signupErr(msg){const e=document.getElementById('signupErr');e.textContent=msg;e.classList.add('show');document.getElementById('signupOk').classList.remove('show');}
+function signupOk(msg){const e=document.getElementById('signupOk');e.textContent=msg;e.classList.add('show');document.getElementById('signupErr').classList.remove('show');}
+
+async function doLogin(){
+  document.getElementById('loginErr').classList.remove('show');
+  const username=document.getElementById('loginUser').value.trim();
+  const password=document.getElementById('loginPass').value;
+  if(!username||!password){loginErr('Preenche utilizador e password.');return;}
+  if(!apiUrl){loginErr('URL da API não configurado no HTML.');return;}
+  try{
+    const r=await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'login',username,password})}).then(x=>x.json());
+    if(r.ok){
+      localStorage.setItem(LUSER,JSON.stringify({username:r.username}));
+      document.getElementById('loginBg').style.display='none';
+      const lo=document.getElementById('logoutBtn'); if(lo)lo.style.display='';
+      startApp();
+    }else{
+      loginErr(r.error||'Utilizador ou password incorretos.');
+    }
+  }catch(e){loginErr('Sem ligação à API — tenta novamente.');}
+}
+
+async function doSignup(){
+  document.getElementById('signupErr').classList.remove('show');
+  document.getElementById('signupOk').classList.remove('show');
+  const username=document.getElementById('suUser').value.trim();
+  const password=document.getElementById('suPass').value;
+  const password2=document.getElementById('suPass2').value;
+  const masterKey=document.getElementById('suMaster').value;
+  if(!username||!password||!masterKey){signupErr('Preenche todos os campos.');return;}
+  if(password!==password2){signupErr('As passwords não coincidem.');return;}
+  if(!apiUrl){signupErr('URL da API não configurado no HTML.');return;}
+  try{
+    const r=await fetch(apiUrl,{method:'POST',body:JSON.stringify({action:'criarUtilizador',username,password,masterKey})}).then(x=>x.json());
+    if(r.ok){
+      signupOk('Conta criada! Já podes entrar.');
+      document.getElementById('loginUser').value=username;
+      setTimeout(showLogin,1200);
+    }else{
+      signupErr(r.error||'Não foi possível criar a conta.');
+    }
+  }catch(e){signupErr('Sem ligação à API — tenta novamente.');}
+}
+
+function doLogout(){
+  if(!confirm('Tens a certeza que queres sair?'))return;
+  localStorage.removeItem(LUSER);
+  location.reload();
+}
+
+// ══ ARRANQUE DA APP ══
+// Só corre depois do login ter sucesso (ou logo de início, se ainda não
+// houver URL da API configurado — não faz sentido bloquear nessa fase).
+function startApp(){
   const cd=localStorage.getItem(LDATA); if(cd)data=JSON.parse(cd);
   const ch=localStorage.getItem(LHIST); if(ch)hist=JSON.parse(ch);
   const ca=localStorage.getItem(LAPTS); if(ca)apts=JSON.parse(ca);
   const cs=localStorage.getItem(LSMS); if(cs)sms=JSON.parse(cs);
   renderAll();
-  if(apiUrl){await syncNow();}
-  else{setSS('error','Sem ligação');toast('⚠️ Define o URL em FIXED_API_URL no topo do HTML');}
-})();
+  if(apiUrl){
+    syncNow();
+    // Sincronismo automático: a cada 2 minutos, e sempre que a página volta
+    // a ficar visível (trocaste de separador, acordaste o telemóvel, etc.)
+    // — assim os dados nunca ficam "presos" à última vez que clicaste Sync.
+    setInterval(()=>{ if(!document.hidden) syncNow(); }, 120000);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncNow(); });
+    window.addEventListener('focus', ()=>syncNow());
+  }else{
+    setSS('error','Sem ligação');toast('⚠️ Define o URL em FIXED_API_URL no topo do HTML');
+  }
+}
+
+function initAuth(){
+  const cfgEl=document.getElementById('configUrl'); if(apiUrl&&cfgEl){cfgEl.value=apiUrl;}
+  if(!apiUrl){
+    // Ainda em configuração — sem URL não há como validar login, não faz
+    // sentido bloquear o ecrã.
+    document.getElementById('loginBg').style.display='none';
+    startApp();
+    return;
+  }
+  const saved=localStorage.getItem(LUSER);
+  if(saved){
+    document.getElementById('loginBg').style.display='none';
+    const lo=document.getElementById('logoutBtn'); if(lo)lo.style.display='';
+    startApp();
+  }
+  // senão, o ecrã de login fica visível (é o estado por omissão) à espera
+}
 
 // ══ SYNC ═════════════════════════════════════════════════════════
+let isSyncing=false;
 async function syncNow(){
   if(!apiUrl){toast('URL não configurado');return;}
+  if(isSyncing)return;
+  isSyncing=true;
   setSS('syncing','A sincronizar…');
   try{
     const [dr,hr,ar,sr]=await Promise.all([
@@ -558,6 +687,8 @@ async function syncNow(){
     saveLocal(); renderAll(); setSS('ok','Sincronizado');
   }catch(e){
     setSS('error','Sem ligação'); saveLocal(); renderAll(); toast('⚠️ Sem ligação — dados locais');
+  }finally{
+    isSyncing=false;
   }
 }
 function setSS(s,l){const d=document.getElementById('sdot'),lb=document.getElementById('slabel');d.className='sdot'+(s!=='ok'?' '+s:'');lb.textContent=l;}
@@ -965,6 +1096,13 @@ function exportCSV(){
 // ══ CONFIG ═══════════════════════════════════════════════════════
 function closeBg(e,id){if(e.target===document.getElementById(id)){if(id==='modalBg')closeModal();else if(id==='entradaBg')closeEntrada();else if(id==='aptBg')closeAptModal();}}
 function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
+
+// Arranca a app só agora, depois de TODAS as outras consts/lets do script
+// (ex: 'meses', usada pelo calendário) já terem sido declaradas — caso
+// contrário o primeiro render automático rebenta com um erro de
+// "Cannot access before initialization" e a app fica meio carregada
+// (ex: Agenda sem calendário, sync automático que nunca chega a correr).
+initAuth();
 </script>
 </body>
 </html>
