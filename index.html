@@ -510,11 +510,10 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
     <div class="fgr">
       <div class="fg"><label>Tipo de Consulta</label>
         <select id="aptTipo">
-          <option>Consulta de Rotina</option><option>Destartarização</option>
-          <option>Restauração / Cárie</option><option>Extração</option>
-          <option>Endodontia (Canal)</option><option>Ortodontia</option>
-          <option>Implante</option><option>Branqueamento</option>
-          <option>Urgência</option><option>Outro</option>
+          <option>Medicina Dentária</option><option>Medicina</option>
+          <option>Pediatria</option><option>Osteopatia</option>
+          <option>Massagem</option><option>Acupuntura</option>
+          <option>Psicologia</option><option>Outro</option>
         </select>
       </div>
       <div class="fg"><label>Duração</label>
@@ -1036,7 +1035,7 @@ function openAptModal(id){
     document.getElementById('aptHora').value=a.hora||'09:00';
     document.getElementById('aptPaciente').value=a.paciente||'';
     document.getElementById('aptTel').value=a.tel||'';
-    document.getElementById('aptTipo').value=a.tipo||'Consulta de Rotina';
+    document.getElementById('aptTipo').value=a.tipo||'Medicina Dentária';
     document.getElementById('aptDur').value=a.duracao||60;
     document.getElementById('aptMedico').value=a.medico||'';
     document.getElementById('aptEstado').value=a.estado||'marcada';
@@ -1045,7 +1044,7 @@ function openAptModal(id){
     document.getElementById('aptData').value=calSelected||new Date().toISOString().slice(0,10);
     document.getElementById('aptHora').value='09:00';
     ['aptPaciente','aptTel','aptMedico','aptNotes'].forEach(x=>document.getElementById(x).value='');
-    document.getElementById('aptTipo').value='Consulta de Rotina';
+    document.getElementById('aptTipo').value='Medicina Dentária';
     document.getElementById('aptDur').value=60;
     document.getElementById('aptEstado').value='marcada';
   }
