@@ -506,7 +506,7 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
       <div class="fg"><label>Hora *</label><input type="time" id="aptHora" value="09:00"></div>
     </div>
     <div class="fg"><label>Nome do Paciente *</label><input type="text" id="aptPaciente" placeholder="Nome completo"></div>
-    <div class="fg"><label>Telefone</label><input type="tel" id="aptTel" placeholder="9XX XXX XXX"></div>
+    <div class="fg"><label>Telefone *</label><input type="tel" id="aptTel" placeholder="9XX XXX XXX" required></div>
     <div class="fgr">
       <div class="fg"><label>Tipo de Consulta</label>
         <select id="aptTipo">
@@ -683,6 +683,8 @@ async function syncNow(){
       fetch(apiUrl+'?action=getSmsTodos').then(r=>r.json())
     ]);
     data=(dr.items||[]).map(norm); hist=hr.hist||[]; apts=ar.apts||[]; sms=sr.sms||[];
+    // limpar SMS órfãos (consultas já eliminadas na BD)
+    const aptIds=new Set(apts.map(a=>a.id)); sms=sms.filter(s=>aptIds.has(String(s.id).replace(/^sms-/,'')));
     saveLocal(); renderAll(); setSS('ok','Sincronizado');
   }catch(e){
     setSS('error','Sem ligação'); saveLocal(); renderAll(); toast('⚠️ Sem ligação — dados locais');
@@ -1057,7 +1059,8 @@ async function saveApt(){
   const pac=document.getElementById('aptPaciente').value.trim();
   const dat=document.getElementById('aptData').value;
   const hor=document.getElementById('aptHora').value;
-  if(!pac||!dat||!hor){alert('Preenche nome do paciente, data e hora.');return;}
+  const tel=document.getElementById('aptTel').value.trim();
+  if(!pac||!dat||!hor||!tel){alert('Preenche nome do paciente, data, hora e telefone.');return;}
   const apt={data:dat,hora:hor,paciente:pac,tel:document.getElementById('aptTel').value.trim(),tipo:document.getElementById('aptTipo').value,duracao:parseInt(document.getElementById('aptDur').value)||60,medico:document.getElementById('aptMedico').value.trim(),estado:document.getElementById('aptEstado').value,notes:document.getElementById('aptNotes').value.trim()};
   setSS('syncing','A guardar…');
   if(aptEditId){const a=apts.find(x=>x.id===aptEditId);Object.assign(a,apt);saveLocal();await apiPost({action:'updateApt',id:aptEditId,...apt});toast('Consulta atualizada!');}
@@ -1071,7 +1074,11 @@ async function markConcluida(id){
 }
 async function deleteApt(id){
   const a=apts.find(x=>x.id===id);if(!confirm(`Eliminar consulta de "${a.paciente}"?`))return;
-  apts=apts.filter(x=>x.id!==id);saveLocal();await apiPost({action:'deleteApt',id});
+  apts=apts.filter(x=>x.id!==id);
+  sms=sms.filter(s=>String(s.id)!=='sms-'+id);
+  saveLocal();
+  await apiPost({action:'deleteApt',id});
+  await apiPost({action:'deleteSms',id:'sms-'+id});
   renderCal();if(calSelected)renderApts(calSelected);renderStats();renderConsultasList();toast('Consulta eliminada!');
 }
 
