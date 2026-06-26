@@ -151,6 +151,39 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
 .sdiv{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--cr);margin:14px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--crxl);}
 .mfoot{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;padding-top:12px;border-top:1px solid var(--bd);}
 
+/* CORES POR TIPO DE CONSULTA */
+:root{
+  --tipo-dentaria-bg:#FFFFFF;--tipo-dentaria-bd:#C0C4CC;--tipo-dentaria-bar:#8A8D96;
+  --tipo-medicina-bg:#FFFDE7;--tipo-medicina-bd:#F9A825;--tipo-medicina-bar:#F9A825;
+  --tipo-pediatria-bg:#FFF3E0;--tipo-pediatria-bd:#EF6C00;--tipo-pediatria-bar:#EF6C00;
+  --tipo-osteopatia-bg:#E3F2FD;--tipo-osteopatia-bd:#1565C0;--tipo-osteopatia-bar:#1565C0;
+  --tipo-acupuntura-bg:#F3E5F5;--tipo-acupuntura-bd:#7B1FA2;--tipo-acupuntura-bar:#7B1FA2;
+  --tipo-massagem-bg:#E8F5E9;--tipo-massagem-bd:#388E3C;--tipo-massagem-bar:#388E3C;
+  --tipo-psicologia-bg:#E8F5E9;--tipo-psicologia-bd:#2E7D53;--tipo-psicologia-bar:#2E7D53;
+  --tipo-outro-bg:#F5F5F5;--tipo-outro-bd:#9E9E9E;--tipo-outro-bar:#9E9E9E;
+}
+.apt-item[data-tipo="Medicina Dentária"]{background:var(--tipo-dentaria-bg);border-color:var(--tipo-dentaria-bd);border-left:4px solid var(--tipo-dentaria-bar);}
+.apt-item[data-tipo="Medicina"]{background:var(--tipo-medicina-bg);border-color:var(--tipo-medicina-bd);border-left:4px solid var(--tipo-medicina-bar);}
+.apt-item[data-tipo="Pediatria"]{background:var(--tipo-pediatria-bg);border-color:var(--tipo-pediatria-bd);border-left:4px solid var(--tipo-pediatria-bar);}
+.apt-item[data-tipo="Osteopatia"]{background:var(--tipo-osteopatia-bg);border-color:var(--tipo-osteopatia-bd);border-left:4px solid var(--tipo-osteopatia-bar);}
+.apt-item[data-tipo="Acupuntura"]{background:var(--tipo-acupuntura-bg);border-color:var(--tipo-acupuntura-bd);border-left:4px solid var(--tipo-acupuntura-bar);}
+.apt-item[data-tipo="Massagem"]{background:var(--tipo-massagem-bg);border-color:var(--tipo-massagem-bd);border-left:4px solid var(--tipo-massagem-bar);}
+.apt-item[data-tipo="Psicologia"]{background:var(--tipo-psicologia-bg);border-color:var(--tipo-psicologia-bd);border-left:4px solid var(--tipo-psicologia-bar);}
+.apt-item[data-tipo="Outro"]{background:var(--tipo-outro-bg);border-color:var(--tipo-outro-bd);border-left:4px solid var(--tipo-outro-bar);}
+/* Legenda de cores */
+.tipo-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.tipo-leg-item{display:flex;align-items:center;gap:5px;font-size:.70rem;font-weight:600;color:var(--ch);}
+.tipo-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+/* Cor das linhas na tabela de consultas */
+tbody tr[data-tipo="Medicina Dentária"]{border-left:4px solid var(--tipo-dentaria-bar);}
+tbody tr[data-tipo="Medicina"]{background:#FFFDE7;border-left:4px solid var(--tipo-medicina-bar);}
+tbody tr[data-tipo="Pediatria"]{background:#FFF3E0;border-left:4px solid var(--tipo-pediatria-bar);}
+tbody tr[data-tipo="Osteopatia"]{background:#E3F2FD;border-left:4px solid var(--tipo-osteopatia-bar);}
+tbody tr[data-tipo="Acupuntura"]{background:#F3E5F5;border-left:4px solid var(--tipo-acupuntura-bar);}
+tbody tr[data-tipo="Massagem"]{background:#E8F5E9;border-left:4px solid var(--tipo-massagem-bar);}
+tbody tr[data-tipo="Psicologia"]{background:#E8F5E9;border-left:4px solid var(--tipo-psicologia-bar);}
+tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-outro-bar);}
+
 /* AGENDA */
 .agenda-grid{display:grid;grid-template-columns:300px 1fr;gap:16px;}
 @media(max-width:700px){.agenda-grid{grid-template-columns:1fr;}}
@@ -372,6 +405,16 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
           <span id="aptPanelTitle">Seleciona um dia</span>
           <button class="btn btn-a btn-sm" id="btnNewApt" onclick="openAptModal()" style="display:none">+ Marcar</button>
         </div>
+        <div class="tipo-legend">
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#8A8D96;border:1px solid #C0C4CC"></span>Dentária</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#F9A825"></span>Medicina</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#EF6C00"></span>Pediatria</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#1565C0"></span>Osteopatia</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#7B1FA2"></span>Acupuntura</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#388E3C"></span>Massagem</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#2E7D53"></span>Psicologia</span>
+          <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#9E9E9E"></span>Outro</span>
+        </div>
         <div id="aptList"></div>
       </div>
     </div>
@@ -380,6 +423,16 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
   <!-- CONSULTAS (lista combinada: consultas + estado do SMS) -->
   <div class="section" id="sec-consultas">
     <div class="sms-summary" id="smsSummary"></div>
+    <div class="tipo-legend" style="margin-bottom:8px">
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#8A8D96;border:1px solid #C0C4CC"></span>Dentária</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#F9A825"></span>Medicina</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#EF6C00"></span>Pediatria</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#1565C0"></span>Osteopatia</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#7B1FA2"></span>Acupuntura</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#388E3C"></span>Massagem</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#2E7D53"></span>Psicologia</span>
+      <span class="tipo-leg-item"><span class="tipo-leg-dot" style="background:#9E9E9E"></span>Outro</span>
+    </div>
     <div class="toolbar">
       <input type="text" class="inp inp-search" id="aptSearchInp" placeholder="🔍 Pesquisar paciente..." oninput="renderConsultasList()">
       <select class="inp" id="aptFilterEstado" onchange="renderConsultasList()" style="max-width:150px">
@@ -949,7 +1002,7 @@ function renderApts(ds){
   const stlabels={marcada:'Marcada',confirmada:'Confirmada',cancelada:'Cancelada',concluida:'Concluída'};
   const stcls={marcada:'as-marcada',confirmada:'as-confirmada',cancelada:'as-cancelada',concluida:'as-concluida'};
   list.innerHTML=dayApts.map(a=>`
-    <div class="apt-item">
+    <div class="apt-item" data-tipo="${esc(a.tipo||'Outro')}">
       <div class="apt-time">${esc(a.hora||'--:--')}</div>
       <div class="apt-body">
         <div class="apt-name">${esc(a.paciente)}</div>
@@ -1003,7 +1056,7 @@ function renderConsultasList(){
 
   document.getElementById('consultasTableBody').innerHTML=f.map(a=>{
     const ds=String(a.data).slice(0,10);
-    return`<tr>
+    return`<tr data-tipo="${esc(a.tipo||'Outro')}">
       <td><strong>${fmtD(ds)}</strong></td>
       <td>${esc(a.hora||'--:--')}</td>
       <td><div class="mn">${esc(a.paciente)}</div>${a.notes?`<div class="msub">${esc(a.notes)}</div>`:''}</td>
