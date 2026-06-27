@@ -170,11 +170,9 @@ td{padding:9px 12px;font-size:.82rem;vertical-align:middle;}
 .apt-item[data-tipo="Massagem"]{background:var(--tipo-massagem-bg);border-color:var(--tipo-massagem-bd);border-left:4px solid var(--tipo-massagem-bar);}
 .apt-item[data-tipo="Psicologia"]{background:var(--tipo-psicologia-bg);border-color:var(--tipo-psicologia-bd);border-left:4px solid var(--tipo-psicologia-bar);}
 .apt-item[data-tipo="Outro"]{background:var(--tipo-outro-bg);border-color:var(--tipo-outro-bd);border-left:4px solid var(--tipo-outro-bar);}
-/* Legenda de cores */
 .tipo-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
 .tipo-leg-item{display:flex;align-items:center;gap:5px;font-size:.70rem;font-weight:600;color:var(--ch);}
 .tipo-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
-/* Cor das linhas na tabela de consultas */
 tbody tr[data-tipo="Medicina Dentária"]{border-left:4px solid var(--tipo-dentaria-bar);}
 tbody tr[data-tipo="Medicina"]{background:#FFFDE7;border-left:4px solid var(--tipo-medicina-bar);}
 tbody tr[data-tipo="Pediatria"]{background:#FFF3E0;border-left:4px solid var(--tipo-pediatria-bar);}
@@ -216,7 +214,7 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
 .as-cancelada{background:var(--dgb);color:var(--dg);}
 .as-concluida{background:var(--off);color:var(--mu);}
 
-/* SMS STATUS (lista combinada no separador Consultas) */
+/* SMS STATUS */
 .sms-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.68rem;font-weight:700;white-space:nowrap;cursor:default;}
 .sms-ok{background:var(--okb);color:var(--ok);}
 .sms-pend{background:var(--wnb);color:var(--wn);}
@@ -246,7 +244,6 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
 .hname{font-size:.82rem;font-weight:600;color:var(--chd);}
 .hdet{font-size:.72rem;color:var(--mu);margin-top:2px;}
 .htime{font-size:.70rem;color:var(--mu);white-space:nowrap;padding-top:2px;}
-
 
 /* VALIDADES */
 .vcard{background:var(--wh);border-radius:var(--r);padding:18px;box-shadow:var(--sh);}
@@ -420,7 +417,7 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
     </div>
   </div>
 
-  <!-- CONSULTAS (lista combinada: consultas + estado do SMS) -->
+  <!-- CONSULTAS -->
   <div class="section" id="sec-consultas">
     <div class="sms-summary" id="smsSummary"></div>
     <div class="tipo-legend" style="margin-bottom:8px">
@@ -481,8 +478,9 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
       </p>
       <ul style="font-size:.80rem;color:var(--ch);line-height:1.7;padding-left:20px;margin-bottom:10px">
         <li><strong>📦 Email de Alertas de Stock</strong> — esgotados, stock baixo, validades expiradas e a expirar (4 meses).</li>
-        <li><strong>🗓️ Email de Consultas Próximas</strong> — lista das consultas marcadas para dentro de 2 dias, enviado separadamente.</li>
-        <li><strong>📱 SMS aos Pacientes (via MacroDroid)</strong> — o telemóvel da clínica lê os SMS pendentes e envia automaticamente um dia antes da consulta.</li>
+        <li><strong>🗓️ Email de Consultas Próximas</strong> — lista das consultas marcadas para o dia seguinte, enviado separadamente.</li>
+        <!-- ✅ CORRIGIDO: era "um dia antes" — o SMS é gerado 2 dias antes da consulta (DIAS_AVISO_SMS = 2) -->
+        <li><strong>📱 SMS aos Pacientes (via MacroDroid)</strong> — o telemóvel da clínica lê os SMS pendentes e envia automaticamente <strong>2 dias antes</strong> da consulta.</li>
       </ul>
       <p style="font-size:.80rem;color:var(--mu);line-height:1.6;margin-bottom:10px">
         O estado de cada SMS (✅ Enviado / ⏳ Pendente / ❌ Falhado / — Sem SMS) aparece junto de cada consulta no
@@ -499,8 +497,6 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
       </p>
     </div>
   </div>
-
-  <!-- CONFIG -->
 
 <!-- MODAL STOCK -->
 <div class="mbg" id="modalBg" onclick="closeBg(event,'modalBg')">
@@ -597,22 +593,19 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
 <script>
 // ╔══════════════════════════════════════════════════════════════════╗
 // ║          LMC - CLÍNICA DENTÁRIA · CONFIGURAÇÃO                  ║
-// ║  Preenche estes campos antes de publicar no GitHub               ║
 // ╠══════════════════════════════════════════════════════════════════╣
 // ║  1. URL do Google Apps Script                                    ║
-// ║     → Cola o URL que obteste ao implementar o Apps Script        ║
 const FIXED_API_URL = 'https://script.google.com/macros/s/AKfycbw4C5duCOaxoQbDpYkN9J0uZvxe7O1n1_8xFg5ab9uCfXK2YM7iXHsP9gd6WDdMf7K7EA/exec';
 // ║                                                                  ║
-// ║  2. Email para receber alertas de STOCK (esgotados/validades)    ║
-// ║     → Substitui pelo email real da clínica                       ║
+// ║  2. Email para receber alertas de STOCK                          ║
 const ALERT_EMAIL_HTML = 'lmc.clinicadentaria@gmail.com';
 // ║                                                                  ║
-// ║  3. Texto do SMS enviado ao paciente 2 dias antes da consulta     ║
-// ║     → Usa {nome}, {data}, {hora}, {tipo}, {medico} como variáveis ║
-// ║     → Este texto é só informativo aqui; o envio real é feito     ║
-// ║       pelo MacroDroid no telemóvel da clínica (ver instruções    ║
-// ║       no separador Histórico / documentação entregue)            ║
-const SMS_TEMPLATE = 'Ola {nome}! Lembrete LMC Clinica Dentaria: tem consulta no dia {data} as {hora} ({tipo}). Para remarcar contacte-nos. Obrigado!';
+// ║  3. Texto do SMS enviado ao paciente 2 dias antes da consulta    ║
+// ║     → Usa {nome}, {data}, {hora}, {tipo} como variáveis          ║
+// ║     ✅ CORRIGIDO: template igual ao do LMC-AppsScript.gs         ║
+// ║        O envio real é feito pelo MacroDroid — este texto é       ║
+// ║        apenas para referência/documentação no HTML               ║
+const SMS_TEMPLATE = 'Olá {nome}! Lembrete LMC Clínica Dentária: tem consulta no dia {data} às {hora} ({tipo}). Pode desmarcar/reagendar até 24h antes. Após esse prazo será cobrado 50% do valor da consulta. **Pagamentos apenas em numerário. Obrigado!';
 // ╚══════════════════════════════════════════════════════════════════╝
 
 
@@ -626,8 +619,7 @@ let calYear, calMonth, calSelected=null;
 
 (function(){const n=new Date();calYear=n.getFullYear();calMonth=n.getMonth();})();
 
-// ══ INIT ═════════════════════════════════════════════════════════
-// ══ LOGIN ══
+// ══ LOGIN ══════════════════════════════════════════════════════
 function showSignup(){document.getElementById('loginView').style.display='none';document.getElementById('signupView').style.display='block';}
 function showLogin(){document.getElementById('signupView').style.display='none';document.getElementById('loginView').style.display='block';}
 function loginErr(msg){const e=document.getElementById('loginErr');e.textContent=msg;e.classList.add('show');}
@@ -681,9 +673,7 @@ function doLogout(){
   location.reload();
 }
 
-// ══ ARRANQUE DA APP ══
-// Só corre depois do login ter sucesso (ou logo de início, se ainda não
-// houver URL da API configurado — não faz sentido bloquear nessa fase).
+// ══ ARRANQUE DA APP ══════════════════════════════════════════════
 function startApp(){
   const cd=localStorage.getItem(LDATA); if(cd)data=JSON.parse(cd);
   const ch=localStorage.getItem(LHIST); if(ch)hist=JSON.parse(ch);
@@ -692,9 +682,6 @@ function startApp(){
   renderAll();
   if(apiUrl){
     syncNow();
-    // Sincronismo automático: a cada 2 minutos, e sempre que a página volta
-    // a ficar visível (trocaste de separador, acordaste o telemóvel, etc.)
-    // — assim os dados nunca ficam "presos" à última vez que clicaste Sync.
     setInterval(()=>{ if(!document.hidden) syncNow(); }, 120000);
     document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncNow(); });
     window.addEventListener('focus', ()=>syncNow());
@@ -706,8 +693,6 @@ function startApp(){
 function initAuth(){
   const cfgEl=document.getElementById('configUrl'); if(apiUrl&&cfgEl){cfgEl.value=apiUrl;}
   if(!apiUrl){
-    // Ainda em configuração — sem URL não há como validar login, não faz
-    // sentido bloquear o ecrã.
     document.getElementById('loginBg').style.display='none';
     startApp();
     return;
@@ -718,7 +703,6 @@ function initAuth(){
     const lo=document.getElementById('logoutBtn'); if(lo)lo.style.display='';
     startApp();
   }
-  // senão, o ecrã de login fica visível (é o estado por omissão) à espera
 }
 
 // ══ SYNC ═════════════════════════════════════════════════════════
@@ -736,7 +720,6 @@ async function syncNow(){
       fetch(apiUrl+'?action=getSmsTodos').then(r=>r.json())
     ]);
     data=(dr.items||[]).map(norm); hist=hr.hist||[]; apts=ar.apts||[]; sms=sr.sms||[];
-    // limpar SMS órfãos (consultas já eliminadas na BD)
     const aptIds=new Set(apts.map(a=>a.id)); sms=sms.filter(s=>aptIds.has(String(s.id).replace(/^sms-/,'')));
     saveLocal(); renderAll(); setSS('ok','Sincronizado');
   }catch(e){
@@ -767,10 +750,9 @@ function expSt(v){
 }
 function pushHist(type,nome,detail){const e={type,nome,detail,ts:new Date().toISOString()};hist.unshift(e);if(hist.length>300)hist.length=300;saveLocal();apiPost({action:'addHist',...e});}
 
-// ══ SMS (estado por consulta — lista combinada no separador Consultas) ══
+// ══ SMS ══════════════════════════════════════════════════════════
 function fmtDT(iso){if(!iso)return'';try{const d=new Date(iso);if(isNaN(d))return'';return d.toLocaleDateString('pt-PT')+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});}catch{return'';}}
 function smsRecFor(aptId){return sms.find(s=>String(s.id)==='sms-'+aptId);}
-// devolve 'enviado'|'pendente'|'falhado'|'na' — usado para filtrar e para o resumo
 function smsEstadoFor(a){
   if(!a.tel)return'na';
   const rec=smsRecFor(a.id);
@@ -781,16 +763,16 @@ function smsEstadoFor(a){
 function smsBadge(a){
   if(!a.tel)return'<span class="sms-tag sms-na" title="Sem número de telefone registado">— sem nº</span>';
   const rec=smsRecFor(a.id);
-  if(!rec)return'<span class="sms-tag sms-na" title="O SMS só é gerado no dia anterior à consulta">—</span>';
+  // ✅ CORRIGIDO: tooltip actualizado de "dia anterior" para "2 dias antes"
+  if(!rec)return'<span class="sms-tag sms-na" title="O SMS é gerado automaticamente 2 dias antes da consulta">—</span>';
   const e=String(rec.estado||'pendente');
   if(e==='enviado'){const dt=fmtDT(rec.enviado_em);return`<span class="sms-tag sms-ok" title="Enviado${dt?' em '+dt:''}">✅ Enviado</span>`;}
   if(e==='falhado')return'<span class="sms-tag sms-fail" title="O envio falhou — confirma o MacroDroid no telemóvel da clínica">❌ Falhado</span>';
-  return'<span class="sms-tag sms-pend" title="Em fila de espera para o MacroDroid enviar">⏳ Pendente</span>';
+  return'<span class="sms-tag sms-pend" title="Em fila de espera para o MacroDroid enviar (2 dias antes da consulta)">⏳ Pendente</span>';
 }
-// resumo rápido no topo do separador Consultas — para validar visualmente se saiu tudo
 function renderSmsSummary(){
   const el=document.getElementById('smsSummary'); if(!el)return;
-  if(!sms.length){el.innerHTML='<span class="sms-sum-item sms-sum-na">📱 Ainda sem SMS gerados (gera-se automaticamente no dia anterior à consulta)</span>';return;}
+  if(!sms.length){el.innerHTML='<span class="sms-sum-item sms-sum-na">📱 Ainda sem SMS gerados (gerado automaticamente 2 dias antes da consulta)</span>';return;}
   const ok=sms.filter(s=>s.estado==='enviado').length;
   const fail=sms.filter(s=>s.estado==='falhado').length;
   const pend=sms.length-ok-fail;
@@ -966,7 +948,7 @@ async function deleteMat(id){
   setSS('syncing','A eliminar…');await apiPost({action:'delete',id});setSS('ok','Guardado');renderAll();toast('Eliminado!');
 }
 
-// ══ AGENDA / CALENDÁRIO ══════════════════════════════════════════
+// ══ AGENDA ═══════════════════════════════════════════════════════
 const meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function calNav(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;}renderCal();if(calSelected)renderApts(calSelected);}
 
@@ -1018,7 +1000,7 @@ function renderApts(ds){
     </div>`).join('');
 }
 
-// ══ LISTA DE CONSULTAS (separador próprio) ══════════════════════
+// ══ LISTA DE CONSULTAS ═══════════════════════════════════════════
 function renderConsultasList(){
   const q=(document.getElementById('aptSearchInp').value||'').toLowerCase();
   const fe=document.getElementById('aptFilterEstado').value;
@@ -1114,7 +1096,10 @@ async function saveApt(){
   const hor=document.getElementById('aptHora').value;
   const tel=document.getElementById('aptTel').value.trim();
   if(!pac||!dat||!hor||!tel){alert('Preenche nome do paciente, data, hora e telefone.');return;}
-  const apt={data:dat,hora:hor,paciente:pac,tel:document.getElementById('aptTel').value.trim(),tipo:document.getElementById('aptTipo').value,duracao:parseInt(document.getElementById('aptDur').value)||60,medico:document.getElementById('aptMedico').value.trim(),estado:document.getElementById('aptEstado').value,notes:document.getElementById('aptNotes').value.trim()};
+  // ✅ NOVO: validação básica do formato do telefone
+  // Aceita números portugueses (9XX XXX XXX), internacionais (+351...) e variantes com espaços/hífens
+  if(!/^[+\d][\d\s\-]{7,14}$/.test(tel)){alert('Telefone inválido. Usa formato 9XX XXX XXX ou +351 9XX XXX XXX.');return;}
+  const apt={data:dat,hora:hor,paciente:pac,tel,tipo:document.getElementById('aptTipo').value,duracao:parseInt(document.getElementById('aptDur').value)||60,medico:document.getElementById('aptMedico').value.trim(),estado:document.getElementById('aptEstado').value,notes:document.getElementById('aptNotes').value.trim()};
   setSS('syncing','A guardar…');
   if(aptEditId){const a=apts.find(x=>x.id===aptEditId);Object.assign(a,apt);saveLocal();await apiPost({action:'updateApt',id:aptEditId,...apt});toast('Consulta atualizada!');}
   else{const id=uid();apts.push({id,...apt});saveLocal();await apiPost({action:'addApt',id,...apt});toast('Consulta marcada!');}
@@ -1152,15 +1137,10 @@ function exportCSV(){
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='LMC_Stock_'+new Date().toISOString().slice(0,10)+'.csv';a.click();toast('Exportado!');
 }
 
-// ══ CONFIG ═══════════════════════════════════════════════════════
+// ══ UTILS ════════════════════════════════════════════════════════
 function closeBg(e,id){if(e.target===document.getElementById(id)){if(id==='modalBg')closeModal();else if(id==='entradaBg')closeEntrada();else if(id==='aptBg')closeAptModal();}}
 function toast(msg,dur=2600){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),dur);}
 
-// Arranca a app só agora, depois de TODAS as outras consts/lets do script
-// (ex: 'meses', usada pelo calendário) já terem sido declaradas — caso
-// contrário o primeiro render automático rebenta com um erro de
-// "Cannot access before initialization" e a app fica meio carregada
-// (ex: Agenda sem calendário, sync automático que nunca chega a correr).
 initAuth();
 </script>
 </body>
