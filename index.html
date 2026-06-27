@@ -101,6 +101,9 @@ select.inp{cursor:pointer;}
 .btn-sm{padding:5px 9px;font-size:.73rem;border-radius:7px;}
 .btn-del{background:var(--dgb);color:var(--dg);}
 .btn-del:hover{background:var(--cr);color:var(--wh);}
+/* ✅ NOVO: estilo do botão forçar SMS */
+.btn-sms{background:#EEF4FF;color:#1A5276;border:1.5px solid #AED6F1;}
+.btn-sms:hover{background:#D6EAF8;border-color:#1A5276;}
 
 /* TABLE */
 .tw{overflow-x:auto;border-radius:var(--r);box-shadow:var(--sh);}
@@ -479,21 +482,18 @@ tbody tr[data-tipo="Outro"]{background:#F5F5F5;border-left:4px solid var(--tipo-
       <ul style="font-size:.80rem;color:var(--ch);line-height:1.7;padding-left:20px;margin-bottom:10px">
         <li><strong>📦 Email de Alertas de Stock</strong> — esgotados, stock baixo, validades expiradas e a expirar (4 meses).</li>
         <li><strong>🗓️ Email de Consultas Próximas</strong> — lista das consultas marcadas para o dia seguinte, enviado separadamente.</li>
-        <!-- ✅ CORRIGIDO: era "um dia antes" — o SMS é gerado 2 dias antes da consulta (DIAS_AVISO_SMS = 2) -->
-        <li><strong>📱 SMS aos Pacientes (via MacroDroid)</strong> — o telemóvel da clínica lê os SMS pendentes e envia automaticamente <strong>2 dias antes</strong> da consulta.</li>
+        <li><strong>📱 SMS aos Pacientes (via MacroDroid)</strong> — gerado automaticamente <strong>2 dias antes</strong> da consulta. Podes também forçar o envio manualmente pelo botão 📱 em cada consulta.</li>
       </ul>
       <p style="font-size:.80rem;color:var(--mu);line-height:1.6;margin-bottom:10px">
         O estado de cada SMS (✅ Enviado / ⏳ Pendente / ❌ Falhado / — Sem SMS) aparece junto de cada consulta no
-        separador <strong>🧾 Consultas</strong>, incluindo um resumo no topo, para validares visualmente se tudo saiu
-        sem teres de abrir a Google Sheet.
+        separador <strong>🧾 Consultas</strong>, incluindo um resumo no topo.
       </p>
       <p style="font-size:.78rem;color:var(--mu);line-height:1.6">
         Para configurar o URL do Google Sheets, o email de destino e o texto do SMS, edita o ficheiro HTML diretamente — os campos
         <code>FIXED_API_URL</code>, <code>ALERT_EMAIL_HTML</code> e <code>SMS_TEMPLATE</code> estão bem identificados no topo do script.
         Os emails são enviados para os endereços <code>ALERT_EMAIL_STOCK</code> e <code>ALERT_EMAIL_CONSULTAS</code>, configurados
-        diretamente no ficheiro <code>LMC-AppsScript.gs</code> (podem ser iguais ou diferentes). O código completo para o Google
-        Apps Script (incluindo os 2 emails e o endpoint para o MacroDroid) está no ficheiro
-        <code>LMC-AppsScript.gs</code> fornecido junto com esta app.
+        diretamente no ficheiro <code>LMC-AppsScript.gs</code>. O código completo para o Google
+        Apps Script está no ficheiro <code>LMC-AppsScript.gs</code> fornecido junto com esta app.
       </p>
     </div>
   </div>
@@ -602,9 +602,6 @@ const ALERT_EMAIL_HTML = 'lmc.clinicadentaria@gmail.com';
 // ║                                                                  ║
 // ║  3. Texto do SMS enviado ao paciente 2 dias antes da consulta    ║
 // ║     → Usa {nome}, {data}, {hora}, {tipo} como variáveis          ║
-// ║     ✅ CORRIGIDO: template igual ao do LMC-AppsScript.gs         ║
-// ║        O envio real é feito pelo MacroDroid — este texto é       ║
-// ║        apenas para referência/documentação no HTML               ║
 const SMS_TEMPLATE = 'Olá {nome}! Lembrete LMC Clínica Dentária: tem consulta no dia {data} às {hora} ({tipo}). Pode desmarcar/reagendar até 24h antes. Após esse prazo será cobrado 50% do valor da consulta. **Pagamentos apenas em numerário. Obrigado!';
 // ╚══════════════════════════════════════════════════════════════════╝
 
@@ -763,16 +760,15 @@ function smsEstadoFor(a){
 function smsBadge(a){
   if(!a.tel)return'<span class="sms-tag sms-na" title="Sem número de telefone registado">— sem nº</span>';
   const rec=smsRecFor(a.id);
-  // ✅ CORRIGIDO: tooltip actualizado de "dia anterior" para "2 dias antes"
-  if(!rec)return'<span class="sms-tag sms-na" title="O SMS é gerado automaticamente 2 dias antes da consulta">—</span>';
+  if(!rec)return'<span class="sms-tag sms-na" title="O SMS é gerado automaticamente 2 dias antes da consulta. Podes forçar o envio com o botão 📱">—</span>';
   const e=String(rec.estado||'pendente');
   if(e==='enviado'){const dt=fmtDT(rec.enviado_em);return`<span class="sms-tag sms-ok" title="Enviado${dt?' em '+dt:''}">✅ Enviado</span>`;}
   if(e==='falhado')return'<span class="sms-tag sms-fail" title="O envio falhou — confirma o MacroDroid no telemóvel da clínica">❌ Falhado</span>';
-  return'<span class="sms-tag sms-pend" title="Em fila de espera para o MacroDroid enviar (2 dias antes da consulta)">⏳ Pendente</span>';
+  return'<span class="sms-tag sms-pend" title="Em fila de espera para o MacroDroid enviar">⏳ Pendente</span>';
 }
 function renderSmsSummary(){
   const el=document.getElementById('smsSummary'); if(!el)return;
-  if(!sms.length){el.innerHTML='<span class="sms-sum-item sms-sum-na">📱 Ainda sem SMS gerados (gerado automaticamente 2 dias antes da consulta)</span>';return;}
+  if(!sms.length){el.innerHTML='<span class="sms-sum-item sms-sum-na">📱 Ainda sem SMS gerados (automático 2 dias antes, ou usa o botão 📱 para forçar)</span>';return;}
   const ok=sms.filter(s=>s.estado==='enviado').length;
   const fail=sms.filter(s=>s.estado==='falhado').length;
   const pend=sms.length-ok-fail;
@@ -780,6 +776,55 @@ function renderSmsSummary(){
     <span class="sms-sum-item sms-sum-ok">✅ ${ok} enviado${ok!==1?'s':''}</span>
     <span class="sms-sum-item sms-sum-pend">⏳ ${pend} pendente${pend!==1?'s':''}</span>
     <span class="sms-sum-item sms-sum-fail">❌ ${fail} falhado${fail!==1?'s':''}</span>`;
+}
+
+// ══ FORÇAR SMS MANUAL ════════════════════════════════════════════
+// Cria (ou recria) um SMS pendente para o MacroDroid apanhar e enviar
+// imediatamente. Útil para consultas marcadas em cima da hora ou quando
+// o acionador automático já correu e não gerou o SMS.
+async function forceSms(aptId){
+  const a=apts.find(x=>x.id===aptId);
+  if(!a)return;
+  if(!a.tel){toast('⚠️ Este paciente não tem telefone registado.');return;}
+
+  const smsId='sms-'+aptId;
+  const existing=sms.find(s=>String(s.id)===smsId);
+
+  // Se já existe pendente, pergunta se quer recriar
+  if(existing&&existing.estado==='pendente'){
+    if(!confirm('Já existe um SMS pendente para '+a.paciente+'.\nQueres criar um novo na mesma (o anterior será substituído)?'))return;
+    sms=sms.filter(s=>String(s.id)!==smsId);
+    await apiPost({action:'deleteSms',id:smsId});
+  }
+
+  // Monta a mensagem com o template
+  const msg=SMS_TEMPLATE
+    .replace('{nome}',a.paciente||'')
+    .replace('{data}',fmtD(a.data))
+    .replace('{hora}',a.hora||'')
+    .replace('{tipo}',a.tipo||'')
+    .replace('{medico}',a.medico||'');
+
+  // Regista localmente
+  const novoSms={
+    id:smsId,tel:a.tel,paciente:a.paciente,mensagem:msg,
+    data_consulta:a.data,hora_consulta:a.hora,
+    estado:'pendente',criado:new Date().toISOString(),enviado_em:''
+  };
+  sms.push(novoSms);
+  saveLocal();
+
+  // Envia para a Google Sheet
+  setSS('syncing','A criar SMS…');
+  await apiPost({
+    action:'forceSms',
+    id:smsId,tel:a.tel,paciente:a.paciente,mensagem:msg,
+    data_consulta:a.data,hora_consulta:a.hora
+  });
+  setSS('ok','Guardado');
+
+  renderConsultasList();
+  toast('📱 SMS criado para '+a.paciente+' — o MacroDroid vai enviar em breve!');
 }
 
 function renderAll(){renderBanners();renderStats();renderCharts();renderTable();renderValidades();renderCal();renderHist();}
@@ -1038,6 +1083,10 @@ function renderConsultasList(){
 
   document.getElementById('consultasTableBody').innerHTML=f.map(a=>{
     const ds=String(a.data).slice(0,10);
+    // Botão 📱 só aparece se tiver telefone e não estiver cancelada/concluída
+    const btnForceSms=(a.tel&&a.estado!=='cancelada'&&a.estado!=='concluida')
+      ? `<button class="btn btn-sm btn-sms" title="Forçar envio de SMS agora (cria SMS pendente para o MacroDroid)" onclick="forceSms('${a.id}')">📱</button>`
+      : '';
     return`<tr data-tipo="${esc(a.tipo||'Outro')}">
       <td><strong>${fmtD(ds)}</strong></td>
       <td>${esc(a.hora||'--:--')}</td>
@@ -1051,6 +1100,7 @@ function renderConsultasList(){
         <button class="btn btn-sm btn-g" onclick="editApt('${a.id}')">✏️</button>
         <button class="btn btn-sm btn-del" onclick="deleteApt('${a.id}')">🗑️</button>
         ${a.estado!=='concluida'?`<button class="btn btn-sm" style="background:var(--okb);color:var(--ok)" onclick="markConcluidaFromList('${a.id}')">✅</button>`:''}
+        ${btnForceSms}
       </div></td>
     </tr>`;
   }).join('');
@@ -1096,8 +1146,6 @@ async function saveApt(){
   const hor=document.getElementById('aptHora').value;
   const tel=document.getElementById('aptTel').value.trim();
   if(!pac||!dat||!hor||!tel){alert('Preenche nome do paciente, data, hora e telefone.');return;}
-  // ✅ NOVO: validação básica do formato do telefone
-  // Aceita números portugueses (9XX XXX XXX), internacionais (+351...) e variantes com espaços/hífens
   if(!/^[+\d][\d\s\-]{7,14}$/.test(tel)){alert('Telefone inválido. Usa formato 9XX XXX XXX ou +351 9XX XXX XXX.');return;}
   const apt={data:dat,hora:hor,paciente:pac,tel,tipo:document.getElementById('aptTipo').value,duracao:parseInt(document.getElementById('aptDur').value)||60,medico:document.getElementById('aptMedico').value.trim(),estado:document.getElementById('aptEstado').value,notes:document.getElementById('aptNotes').value.trim()};
   setSS('syncing','A guardar…');
